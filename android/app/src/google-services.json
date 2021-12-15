@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "891160139249",
+    "project_id": "neverlost-beta-9e735",
+    "storage_bucket": "neverlost-beta-9e735.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:891160139249:android:40f9c7c0815234a5b76050",
+        "android_client_info": {
+          "package_name": "com.example.neverlost_beta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "891160139249-ffmt10t7surc2t2rouvd8i204a9rp21l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.neverlost_beta",
+            "certificate_hash": "4d5a6c461053531a97275f447f066d51313281ff"
+          }
+        },
+        {
+          "client_id": "891160139249-pa5im74ojccknrl4716ldo20fhpvmosf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoU_vT47ABhrqVXo3nIspWSu2oESys1Ps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "891160139249-pa5im74ojccknrl4716ldo20fhpvmosf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
