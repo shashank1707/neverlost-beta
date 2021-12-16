@@ -241,7 +241,7 @@ class DatabaseMethods {
     return firestore
         .collection('users')
         .doc(uid)
-        .update({'isShare': !mastershare});
+        .update({'locShare': !mastershare});
   }
 
   updatechatLocShare(chatRoomID, isShare) {

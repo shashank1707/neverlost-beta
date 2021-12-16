@@ -1,4 +1,4 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:icon_badge/icon_badge.dart';
 import 'package:neverlost_beta/Components/constants.dart';
@@ -6,6 +6,7 @@ import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
+import 'package:neverlost_beta/Screens/setting.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -28,7 +29,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         user = value;
       });
     });
-    print(user);
     getCurrentUserSnapshots();
   }
 
@@ -37,7 +37,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     setState(() {
       isLoading = false;
     });
-    print(user);
   }
 
   Widget notificationBadge() {
@@ -178,14 +177,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             ),
             body: TabBarView(
               controller: _tabController,
-              children: const [
+              children: [
                 // Chats(user: user),
                 // GroupChats(user: user),
                 // Search(uid: user['uid']),
                 Loading(),
                 Loading(),
                 Loading(),
-                Loading()
+                Setting(userUID: user['uid'])
               ],
             ),
           );
