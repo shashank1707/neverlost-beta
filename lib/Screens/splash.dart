@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Firebase/auth.dart';
@@ -44,10 +47,9 @@ class _SplashScreenState extends State<SplashScreen> {
           );
         }));
       } else {
-        showDialog(context: context, builder: (context) {
-          return SimpleDialog(
-            title: Text('RETRY'),
-          );
+        Fluttertoast.showToast(msg:  'No Internet Connection');
+        await Future.delayed(const Duration(seconds: 2)).then((value){
+          exit(0);
         });
       }
     });
