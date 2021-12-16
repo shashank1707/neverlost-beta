@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:neverlost_beta/Screens/home.dart';
+import 'package:neverlost_beta/Screens/signin.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -39,15 +40,15 @@ class _SplashScreenState extends State<SplashScreen> {
             future: AuthMethods().getCurrentUser(),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                return Container();
+                return const Home();
               } else {
-                return Container();
+                return const Signin();
               }
             },
           );
         }));
       } else {
-        Fluttertoast.showToast(msg:  'No Internet Connection');
+        Fluttertoast.showToast(msg: 'No Internet Connection');
         await Future.delayed(const Duration(seconds: 2)).then((value){
           exit(0);
         });
