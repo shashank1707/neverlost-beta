@@ -275,14 +275,15 @@ class DatabaseMethods {
       await firebase_storage.FirebaseStorage.instance
           .ref(filepath)
           .putFile(file);
-      dynamic image = await firebase_storage.FirebaseStorage.instance
+      await firebase_storage.FirebaseStorage.instance
           .ref(filepath)
-          .getDownloadURL();
-      await firestore
-          .collection('users')
-          .doc(userUID)
-          .update({'photoURL': image});
-      return image;
+          .getDownloadURL()
+          .then((value) async {
+        await firestore
+            .collection('users')
+            .doc(userUID)
+            .update({'photoURL': value});
+      });
     } on firebase_core.FirebaseException catch (e) {
       print(e);
       return false;
