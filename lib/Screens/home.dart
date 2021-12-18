@@ -7,6 +7,8 @@ import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
 import 'package:neverlost_beta/Screens/setting.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:io';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -108,8 +110,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                               builder: (context) => Profile(user: user)));
                     },
                     icon: ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: Image.network(user['photoURL']))),
+                      borderRadius: BorderRadius.circular(100),
+                      child: ValueListenableBuilder(
+                          valueListenable: Hive.box('IMAGEBOXKEY').listenable(),
+                          builder: (context, Box box, widget) {
+                            return box.get('IMAGEDATAKEY') != null
+                                ? Image.file(File(box.get('IMAGEDATAKEY')))
+                                : Image.network(user['photoURL']);
+                          }),
+                    )),
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(60),
