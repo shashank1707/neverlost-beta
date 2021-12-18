@@ -254,6 +254,10 @@ class DatabaseMethods {
         .update({'isSharing': isShare});
   }
 
+  updatelastseen(DateTime dt, String uid) {
+    return firestore.collection('users').doc(uid).update({'lastSeen': dt});
+  }
+
   changeProfilePhoto(filep, userUID) async {
     final firebase_storage.FirebaseStorage _storage =
         firebase_storage.FirebaseStorage.instanceFor(

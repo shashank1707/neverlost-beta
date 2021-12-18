@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:icon_badge/icon_badge.dart';
@@ -29,6 +31,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     await HiveDB().getUserData().then((value) {
       setState(() {
         user = value;
+      });
+      Timer.periodic(const Duration(seconds: 1), (timer) {
+        DatabaseMethods().updatelastseen(DateTime.now(), user['uid']);
       });
     });
     getCurrentUserSnapshots();
@@ -85,6 +90,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void initState() {
     _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
     getUserFromHive();
+
     super.initState();
   }
 
