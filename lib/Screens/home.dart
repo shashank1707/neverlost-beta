@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:icon_badge/icon_badge.dart';
@@ -8,6 +10,8 @@ import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/notifications.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
 import 'package:neverlost_beta/Screens/setting.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:io';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -29,6 +33,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       setState(() {
         user = value;
         isLoading = false;
+      });
+      Timer.periodic(const Duration(seconds: 1), (timer) {
+        DatabaseMethods().updatelastseen(DateTime.now(), user['uid']);
       });
     });
   }
@@ -77,6 +84,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void initState() {
     _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
     getUserFromHive();
+
     super.initState();
   }
 
@@ -102,8 +110,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                               builder: (context) => Profile(user: user)));
                     },
                     icon: ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: Image.network(user['photoURL']))),
+                      borderRadius: BorderRadius.circular(100),
+                      child: ValueListenableBuilder(
+                          valueListenable: Hive.box('IMAGEBOXKEY').listenable(),
+                          builder: (context, Box box, widget) {
+                            return box.get('IMAGEDATAKEY') != null
+                                ? Image.file(File(box.get('IMAGEDATAKEY')))
+                                : Image.network(user['photoURL']);
+                          }),
+                    )),
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(60),
