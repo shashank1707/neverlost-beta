@@ -126,7 +126,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'sender': widget.user['uid'],
       'senderName': widget.user['name'],
       'seenBy': [],
-      'notSeenBy': widget.groupInfo['users'],
+      'notSeenBy': widget.groupInfo['users'].where((element) => element != widget.user['uid']).toList(),
       'timestamp': DateTime.now()
     };
     if (_messageController.text != '') {
