@@ -5,6 +5,7 @@ import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
+import 'package:neverlost_beta/Screens/notifications.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
 import 'package:neverlost_beta/Screens/setting.dart';
 
@@ -27,15 +28,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     await HiveDB().getUserData().then((value) {
       setState(() {
         user = value;
+        isLoading = false;
       });
-    });
-    getCurrentUserSnapshots();
-  }
-
-  void getCurrentUserSnapshots() async {
-    userStream = await DatabaseMethods().getUserSnapshots(user['uid']);
-    setState(() {
-      isLoading = false;
     });
   }
 
@@ -45,35 +39,35 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       builder: (context, AsyncSnapshot snapshot) {
         return snapshot.hasData
             ? IconBadge(
-                icon: Icon(Icons.notifications_none),
+                icon: const Icon(Icons.notifications_none),
                 badgeColor: Colors.red,
                 itemCount: snapshot.data['pendingRequestList'].length,
                 top: 8,
                 right: 8,
                 hideZero: true,
                 onTap: () {
-                  // Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(
-                  //         builder: (context) => Notifications(
-                  //               user: user,
-                  //             )));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Notifications(
+                                user: user,
+                              )));
                 },
               )
             : IconBadge(
-                icon: Icon(Icons.notifications_none),
+                icon: const Icon(Icons.notifications_none),
                 badgeColor: Colors.redAccent,
                 itemCount: 0,
                 top: 10,
                 right: 10,
                 hideZero: true,
                 onTap: () {
-                  // Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(
-                  //         builder: (context) => Notifications(
-                  //               user: user,
-                  //             )));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Notifications(
+                                user: user,
+                              )));
                 });
       },
     );
@@ -134,40 +128,24 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                             height: 30,
                             child: const Text(
                               'Chats',
-                              // style: TextStyle(
-                              //     color: _currentIndex == 0
-                              //         ? backgroundColor1
-                              //         : textColor1),
                             )),
                         Container(
                             alignment: Alignment.center,
                             height: 30,
                             child: const Text(
                               'Groups',
-                              // style: TextStyle(
-                              // color: _currentIndex == 1
-                              //     ? backgroundColor1
-                              //     : textColor1),
                             )),
                         Container(
                             alignment: Alignment.center,
                             height: 30,
                             child: const Text(
                               'Add',
-                              // style: TextStyle(
-                              //     color: _currentIndex == 2
-                              //         ? backgroundColor1
-                              //         : textColor1),
                             )),
                         Container(
                             alignment: Alignment.center,
                             height: 30,
                             child: const Text(
                               'Settings',
-                              // style: TextStyle(
-                              //     color: _currentIndex == 3
-                              //         ? backgroundColor1
-                              //         : textColor1),
                             )),
                       ],
                     ),
