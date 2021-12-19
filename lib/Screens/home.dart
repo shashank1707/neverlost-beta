@@ -7,6 +7,7 @@ import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
+import 'package:neverlost_beta/Screens/groupchats.dart';
 import 'package:neverlost_beta/Screens/notifications.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
 import 'package:neverlost_beta/Screens/setting.dart';
@@ -175,7 +176,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 // GroupChats(user: user),
                 // Search(uid: user['uid']),
                 Loading(),
-                Loading(),
+                GroupChats(user: user,),
                 Loading(),
                 Setting(userUID: user['uid'])
               ],

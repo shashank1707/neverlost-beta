@@ -289,4 +289,31 @@ class DatabaseMethods {
       return false;
     }
   }
+
+  createGroup(groupInfo) async {
+    await firestore.collection('groupChats').doc().set(groupInfo);
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> findGroupChat(uid) {
+    return firestore.collection('groupChats').where('users', arrayContains: uid).orderBy('timestamp', descending: true).snapshots();
+  }
+
+  Future<Stream<QuerySnapshot<Map<String, dynamic>>>> getGroupMessages(groupChatID) async {
+    return firestore.collection('groupChats').doc(groupChatID).collection('chats').orderBy('timestamp', descending: true).snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getUnseenGroupMessages(groupChatID, uid){
+    return firestore.collection('groupChats').doc(groupChatID).collection('chats').where('notSeenBy', arrayContains: uid).snapshots();
+  }
+
+  addGroupMessage(groupChatID , messageInfo, lastMessageInfo) async {
+    await firestore.collection('groupChats').doc(groupChatID).collection('chats').doc().set(messageInfo);
+
+    await firestore.collection('groupChats').doc(groupChatID).update(lastMessageInfo);
+  }
+
+  updateGroupSeenInfo(groupChatID, messageID, info) async {
+    await firestore.collection('groupChats').doc(groupChatID).collection('chats').doc(messageID).update(info);
+  }
+
 }

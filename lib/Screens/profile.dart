@@ -28,6 +28,7 @@ class _ProfileState extends State<Profile> {
   void initState() {
     phoneController.text = widget.user['phone'];
     statusController.text = widget.user['status'];
+    nameController.text = widget.user['name'];
     super.initState();
   }
 
@@ -162,7 +163,7 @@ class _ProfileState extends State<Profile> {
               TextButton(
                   onPressed: () {
                     var userData = widget.user;
-                    userData['name'] = nameController.text;
+                    userData['name'] = nameController.text.toUpperCase();
                     HiveDB().updateUserData(userData);
                     DatabaseMethods().updateUserDatabase(userData).then((v) {
                       Navigator.pop(context);
@@ -241,7 +242,7 @@ class _ProfileState extends State<Profile> {
             toolbarColor: backgroundColor1,
             toolbarWidgetColor: Colors.white,
             lockAspectRatio: true),
-        iosUiSettings: IOSUiSettings(
+        iosUiSettings: const IOSUiSettings(
           minimumAspectRatio: 1.0,
         ));
         if(croppedFile!=null){
