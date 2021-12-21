@@ -1,15 +1,21 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:icon_badge/icon_badge.dart';
+import 'package:location/location.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
+import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
+import 'package:neverlost_beta/Screens/chat_list.dart';
 import 'package:neverlost_beta/Screens/groupchats.dart';
 import 'package:neverlost_beta/Screens/notifications.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
+import 'package:neverlost_beta/Screens/search.dart';
 import 'package:neverlost_beta/Screens/setting.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:io';
@@ -28,7 +34,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   late Stream userStream;
 
   bool isLoading = true;
-
+  late PermissionStatus _permissionGranted;
+  late LocationData _locationData;
+  Location location = Location();
+  late double lat;
+  late double long;
   void getUserFromHive() async {
     await HiveDB().getUserData().then((value) {
       setState(() {
@@ -85,8 +95,41 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void initState() {
     _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
     getUserFromHive();
-
+    getlocation();
     super.initState();
+  }
+
+  void getlocation() async {
+    bool _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    _locationData = await location.getLocation();
+    location.onLocationChanged.listen((event) async {
+      setState(() {
+        lat = event.latitude!;
+        long = event.longitude!;
+      });
+      await DatabaseMethods().updateUserLocation(user['uid'], lat, long);
+    });
+    setState(() {
+      lat = _locationData.latitude!;
+      long = _locationData.longitude!;
+    });
+
+    await DatabaseMethods().updateUserLocation(user['uid'], lat, long);
   }
 
   @override
@@ -175,9 +218,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 // Chats(user: user),
                 // GroupChats(user: user),
                 // Search(uid: user['uid']),
-                Loading(),
-                GroupChats(user: user,),
-                Loading(),
+                ChatList(currentUser: user),
+                GroupChats(
+                  user: user,
+                ),
+                Search(user: user),
                 Setting(userUID: user['uid'])
               ],
             ),
