@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
+import 'package:neverlost_beta/Screens/uploader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -80,14 +81,14 @@ class _ChatsState extends State<Chats> {
         ));
 
     setState(() {
-      // Navigator.push(
-      //     context,
-      //     MaterialPageRoute(
-      //         builder: (context) => Uploader(
-      //             chatRoomID: widget.chatRoomID,
-      //             currentUser: widget.currentUser,
-      //             friendUser: widget.friendUser,
-      //             image: croppedFile)));
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => Uploader(
+                  chatRoomID: widget.chatRoomID,
+                  currentUser: widget.currentUser,
+                  friendUser: widget.friendUser,
+                  image: croppedFile)));
     });
   }
 

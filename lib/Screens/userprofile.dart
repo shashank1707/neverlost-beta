@@ -160,7 +160,7 @@ class _UserProfileState extends State<UserProfile> {
                                       ? Icons.person_remove_alt_1_outlined
                                       : Icons.person_add_alt_outlined,
                                   size: 35,
-                                  color: backgroundColor1,
+                                  color: backgroundColor2,
                                 )),
                             if (isfriend)
                               IconButton(
@@ -171,20 +171,21 @@ class _UserProfileState extends State<UserProfile> {
                                   icon: const Icon(
                                     Icons.message,
                                     size: 35,
-                                    color: backgroundColor1,
+                                    color: backgroundColor2,
                                   )),
                             if (isfriend)
                               IconButton(
                                   onPressed: () {
                                     if (widget.searchedUser['phone'].length ==
-                                        10)
+                                        10) {
                                       _makePhoneCall(
                                           'tel:${widget.searchedUser['phone']}');
+                                    }
                                   },
                                   icon: const Icon(
                                     Icons.call,
                                     size: 35,
-                                    color: backgroundColor1,
+                                    color: backgroundColor2,
                                   ))
                           ],
                         )
