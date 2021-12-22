@@ -123,12 +123,12 @@ class _ChatRoomState extends State<ChatRoom>
               automaticallyImplyLeading: false,
               title: InkWell(
                 onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => UserProfile(
-                              currentUser: widget.currentUser,
-                              searchedUser: widget.friendUser)));
+                  // Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //         builder: (context) => UserProfile(
+                  //             currentUser: widget.currentUser,
+                  //             searchedUser: widget.friendUser)));
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,

@@ -1,54 +1,60 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:neverlost_beta/Components/constants.dart';
+import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Screens/userprofile.dart';
 
 class Search extends StatefulWidget {
-  final user;
-  const Search({Key? key, required this.user}) : super(key: key);
+  final String uid;
+
+  const Search({required this.uid, Key? key}) : super(key: key);
 
   @override
   _SearchState createState() => _SearchState();
 }
 
 class _SearchState extends State<Search> {
-  final searchController = TextEditingController();
-  List ispressed = [true, false];
-  List<IconData> iconState = [Icons.person, Icons.email_rounded, Icons.phone];
-  int currentIndex = 0;
-  List<String> listState = ['name', 'email'];
-  late Stream searchStream;
+  var selectedMethod = [true, false];
+  String searchMethod = 'Name';
   bool isSearching = false;
+  bool isLoading = true;
+
+  Map<String, dynamic> user = {};
+
+  final TextEditingController _searchController = TextEditingController();
+
+  late Stream searchStream;
+
   @override
   void initState() {
+    getCurrentUser();
     super.initState();
   }
 
-  void onpress(int index) {
-    if (!ispressed[index]) {
+  void getCurrentUser() async {
+    print('getting');
+    await DatabaseMethods().findUserWithUID(widget.uid).then((value) {
       setState(() {
-        ispressed[index] = true;
-        ispressed[currentIndex] = false;
-        currentIndex = index;
+        user = value;
+        isLoading = false;
       });
-    }
-    onsearch();
+    });
   }
 
-  void onsearch() async {
-    isSearching = searchController.text != '' ? true : false;
+  void onSearch() async {
+    isSearching = _searchController.text != '' ? true : false;
 
-    switch (listState[currentIndex]) {
-      case 'name':
+    switch (searchMethod) {
+      case 'Name':
         searchStream =
-            await DatabaseMethods().searchByName(searchController.text);
+            await DatabaseMethods().searchByName(_searchController.text);
         break;
-      case 'email':
+      case 'Email':
         searchStream =
-            await DatabaseMethods().searchByEmail(searchController.text);
+            await DatabaseMethods().searchByEmail(_searchController.text);
         break;
     }
-
     setState(() {});
   }
 
@@ -62,176 +68,207 @@ class _SearchState extends State<Search> {
                 itemCount: snapshot.data.docs.length,
                 itemBuilder: (context, index) {
                   var ds = snapshot.data.docs[index];
-                  return ds['email'] != widget.user['email']
-                      ? Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: ListTile(
-                            onTap: () {
-                              FocusScopeNode currentFocus =
-                                  FocusScope.of(context);
-                              if (!currentFocus.hasPrimaryFocus) {
-                                currentFocus.unfocus();
-                              }
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => UserProfile(
-                                            currentUser: widget.user,
-                                            searchedUser: ds,
-                                          )));
-                            },
-                            leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(100),
-                                child: Image.network(ds['photoURL'])),
-                            title: Text(ds['name'],
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(ds['email'],
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            trailing: Icon(Icons.chevron_right_rounded),
-                          ),
-                        )
-                      : Text('');
+                  return Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => UserProfile(
+                                    currentUser: user, userUID: ds['uid'])));
+                      },
+                      leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: Image.network(ds['photoURL'])),
+                      title: Text(ds['name'],
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,),
+                      subtitle: Text(ds['email'],
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,),
+                      trailing: Icon(Icons.chevron_right_rounded),
+                    ),
+                  );
                 },
               )
-            : Text('NO result found');
+            : const Center(
+                child: CircularProgressIndicator(
+                  color: backgroundColor1,
+                ),
+              );
       },
     );
   }
 
+  Widget recentSearchTiles() {
+    return ListView.builder(
+      itemCount: user['recentSearchList'].length,
+      shrinkWrap: true,
+      itemBuilder: (context, index) {
+        return StreamBuilder(
+          stream: DatabaseMethods().getUserSnapshots(user['recentSearchList'][index]),
+          builder: (context, AsyncSnapshot snapshot){
+            Map<String, dynamic> searchedUser = snapshot.hasData ? snapshot.data.data() : {};
+            return snapshot.hasData
+            ? Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: ListTile(
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => UserProfile(
+                                currentUser: user,
+                                userUID: searchedUser['uid'])));
+                  },
+                  leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: Image.network(searchedUser['photoURL'])),
+                  title: Text(searchedUser['name'],
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,),
+                  subtitle: Text(searchedUser['email'],
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                                softWrap: true,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,),
+                  trailing: Icon(Icons.chevron_right_rounded),
+                ),
+              )
+            : const Text('');
+          },
+        );        
+      },
+    );
+  }
+
+  void changeSearchMethod(index) {
+    selectedMethod = List.filled(2, false);
+
+    setState(() {
+      selectedMethod[index] = true;
+      if (index == 0) {
+        searchMethod = 'Name';
+      } else {
+        searchMethod = 'Email';
+      }
+    });
+
+    onSearch();
+  }
+
   @override
   Widget build(BuildContext context) {
+    var height = MediaQuery.of(context).size.height;
     var width = MediaQuery.of(context).size.width;
-    return Scaffold(
-      backgroundColor: backgroundColor2,
-      body: SizedBox(
-        width: width,
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Container(
-                decoration: BoxDecoration(
-                    color: backgroundColor1.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20)),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: Icon(
-                          iconState[currentIndex],
-                          color: backgroundColor1,
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                            controller: searchController,
-                            cursorColor: backgroundColor1,
-                            cursorHeight: 20,
-                            onChanged: (value) async {
-                              onsearch();
+    return isLoading
+        ? Loading()
+        : Scaffold(
+            backgroundColor: backgroundColor2,
+            body: SizedBox(
+              height: height,
+              width: width,
+              child: Column(
+                children: [
+                  Container(
+                    margin: EdgeInsets.all(16),
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                        color: backgroundColor1.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            onChanged: (value) {
+                              onSearch();
                             },
-                            style: const TextStyle(
-                                color: backgroundColor1, fontSize: 18),
+                            controller: _searchController,
+                            style: const TextStyle(color: textColor1),
                             decoration: InputDecoration(
-                                hintText:
-                                    'Search by ${listState[currentIndex]}',
-                                hintStyle: const TextStyle(
-                                    color: Colors.grey, fontSize: 16),
                                 border: InputBorder.none,
-                                helperStyle:
-                                    const TextStyle(color: backgroundColor1))),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: InkWell(
-                          onTap: () async {
-                            searchController.clear();
+                                hintText: 'Search by $searchMethod',
+                                hintStyle: TextStyle(color: textColor1)),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(_searchController.text == '' ? Icons.search : Icons.close_rounded, color: textColor1),
+                          onPressed: () {
                             setState(() {
-                              isSearching = false;
+                              _searchController.clear();
                             });
                           },
-                          child: Icon(
-                            searchController.text != ''
-                                ? Icons.close
-                                : Icons.search,
-                            color: iconColor1,
+                        )
+                      ],
+                    ),
+                  ),
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                        color: backgroundColor1,
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          height: 35,
+                          decoration: BoxDecoration(
+                            color: selectedMethod[0]
+                                ? backgroundColor2
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: MaterialButton(
+                            child: Text(
+                              'Name',
+                              style: TextStyle(
+                                  color: selectedMethod[0]
+                                      ? backgroundColor1
+                                      : textColor1),
+                            ),
+                            onPressed: () {
+                              changeSearchMethod(0);
+                            },
                           ),
                         ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-              child: Container(
-                decoration: BoxDecoration(
-                    color: backgroundColor1,
-                    borderRadius: BorderRadius.circular(8)),
-                height: 50,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                          color: ispressed[0]
-                              ? backgroundColor2
-                              : backgroundColor1,
-                          borderRadius: BorderRadius.circular(6)),
-                      height: 40,
-                      width: 80,
-                      child: TextButton(
-                          onPressed: () {
-                            onpress(0);
-                          },
-                          style: ButtonStyle(
-                            overlayColor: MaterialStateColor.resolveWith(
-                                (states) => backgroundColor2.withOpacity(0.2)),
+                        Container(
+                          height: 35,
+                          decoration: BoxDecoration(
+                            color: selectedMethod[1]
+                                ? backgroundColor2
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text('name',
+                          child: MaterialButton(
+                            child: Text(
+                              'Email',
                               style: TextStyle(
-                                  color: ispressed[0]
+                                  color: selectedMethod[1]
                                       ? backgroundColor1
-                                      : backgroundColor2))),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                          color: ispressed[1]
-                              ? backgroundColor2
-                              : backgroundColor1,
-                          borderRadius: BorderRadius.circular(5)),
-                      height: 40,
-                      width: 80,
-                      child: TextButton(
-                          style: ButtonStyle(
-                            overlayColor: MaterialStateColor.resolveWith(
-                                (states) => backgroundColor2.withOpacity(0.2)),
+                                      : textColor1),
+                            ),
+                            onPressed: () {
+                              changeSearchMethod(1);
+                            },
                           ),
-                          onPressed: () {
-                            onpress(1);
-                          },
-                          child: Text(
-                            'email',
-                            style: TextStyle(
-                                color: ispressed[1]
-                                    ? backgroundColor1
-                                    : backgroundColor2),
-                          )),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  isSearching
+                      ? Expanded(child: searchList())
+                      : Expanded(child: recentSearchTiles())
+                ],
               ),
             ),
-            isSearching
-                ? Expanded(child: searchList())
-                : Expanded(child: Text('Search Your Friends here'))
-          ],
-        ),
-      ),
-    );
+          );
   }
 }

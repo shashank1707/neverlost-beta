@@ -222,7 +222,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 GroupChats(
                   user: user,
                 ),
-                Search(user: user),
+                Search(uid: user['uid']),
                 Setting(userUID: user['uid'])
               ],
             ),

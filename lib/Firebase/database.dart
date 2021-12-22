@@ -9,7 +9,7 @@ class DatabaseMethods {
 
   createUserDatabase(name, email, uid, photoURL, phone) async {
     Map<String, dynamic> user = {
-      "name": name.toUpperCase(),
+      "name": name,
       "email": email.toLowerCase(),
       "uid": uid,
       "photoURL": photoURL,

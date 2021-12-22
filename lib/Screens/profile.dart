@@ -163,7 +163,7 @@ class _ProfileState extends State<Profile> {
               TextButton(
                   onPressed: () {
                     var userData = widget.user;
-                    userData['name'] = nameController.text.toUpperCase();
+                    userData['name'] = nameController.text;
                     HiveDB().updateUserData(userData);
                     DatabaseMethods().updateUserDatabase(userData).then((v) {
                       Navigator.pop(context);
