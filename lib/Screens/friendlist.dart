@@ -21,7 +21,7 @@ class _FriendsListState extends State<FriendsList> {
   @override
   void initState() {
     super.initState();
-    getUSerData();
+    getUserData();
   }
 
   void refresh() {
@@ -30,10 +30,10 @@ class _FriendsListState extends State<FriendsList> {
       friendsList = [];
       listUID = [];
     });
-    getUSerData();
+    getUserData();
   }
 
-  getUSerData() async {
+  getUserData() async {
     await DatabaseMethods()
         .findUserWithUID(widget.currentUser['uid'])
         .then((value) {

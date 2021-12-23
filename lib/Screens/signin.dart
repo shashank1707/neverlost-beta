@@ -21,13 +21,11 @@ class _SigninState extends State<Signin> {
       await DatabaseMethods()
           .createUserDatabase(user.displayName, user.email, user.uid,
               user.photoURL, user.phoneNumber)
-          .then((value) async {
-        await HiveDB().updateUserData(value).then((v) {
-          Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const Home()),
-              (route) => false);
-        });
+          .then((value) {
+        Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const Home()),
+            (route) => false);
       });
     });
   }

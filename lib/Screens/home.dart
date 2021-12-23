@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/chat_list.dart';
+import 'package:neverlost_beta/Screens/friendrequests.dart';
 import 'package:neverlost_beta/Screens/groupchats.dart';
 import 'package:neverlost_beta/Screens/notifications.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
@@ -30,7 +32,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  Map<String, dynamic> user = {};
+  Map<String, dynamic> currentUser = {};
   late Stream userStream;
 
   bool isLoading = true;
@@ -39,64 +41,117 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Location location = Location();
   late double lat;
   late double long;
-  void getUserFromHive() async {
-    await HiveDB().getUserData().then((value) {
-      setState(() {
-        user = value;
-        isLoading = false;
-      });
-      Timer.periodic(const Duration(seconds: 1), (timer) {
-        DatabaseMethods().updatelastseen(DateTime.now(), user['uid']);
+
+  @override
+  void initState() {
+    _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
+    getCurrentUser();
+    getlocation();
+    super.initState();
+  }
+
+  void getCurrentUser() async {
+    await AuthMethods().getCurrentUser().then((auth) {
+      DatabaseMethods().getUserSnapshots(auth.uid).listen((user) {
+        setState(() {
+          currentUser = user.data()!;
+          isLoading = false;
+        });
       });
     });
   }
 
   Widget notificationBadge() {
     return StreamBuilder(
-      stream: DatabaseMethods().getUserSnapshots(user['uid']),
+      stream: DatabaseMethods().getUserSnapshots(currentUser['uid']),
       builder: (context, AsyncSnapshot snapshot) {
-        return snapshot.hasData
-            ? IconBadge(
-                icon: const Icon(Icons.notifications_none),
-                badgeColor: Colors.red,
-                itemCount: snapshot.data['pendingRequestList'].length,
-                top: 8,
-                right: 8,
-                hideZero: true,
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => Notifications(
-                                user: user,
-                              )));
-                },
+        return snapshot.hasData &&
+                snapshot.data['notifications'].where((notification) {
+                      return notification['seen'] == false;
+                    }).length >
+                    0
+            ? Badge(
+                position: BadgePosition.topEnd(top: 5, end: 5),
+                badgeContent: Text(
+                  '${snapshot.data['notifications'].where((notification) {
+                    return notification['seen'] == false;
+                  }).length}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.notifications),
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => Notifications(
+                                  currentUser: currentUser,
+                                )));
+                  },
+                ),
               )
-            : IconBadge(
-                icon: const Icon(Icons.notifications_none),
-                badgeColor: Colors.redAccent,
-                itemCount: 0,
-                top: 10,
-                right: 10,
-                hideZero: true,
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => Notifications(
-                                user: user,
-                              )));
-                });
+            : Badge(
+                position: BadgePosition.topEnd(top: 5, end: 5),
+                badgeContent: null,
+                showBadge: false,
+                child: IconButton(
+                  icon: const Icon(Icons.notifications),
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => Notifications(
+                                  currentUser: currentUser,
+                                )));
+                  },
+                ),
+              );
       },
     );
   }
 
-  @override
-  void initState() {
-    _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
-    getUserFromHive();
-    getlocation();
-    super.initState();
+  Widget friendRequestBadge() {
+    return StreamBuilder(
+      stream: DatabaseMethods().getUserSnapshots(currentUser['uid']),
+      builder: (context, AsyncSnapshot snapshot) {
+        return snapshot.hasData &&
+                snapshot.data['pendingRequestList'].length > 0
+            ? Badge(
+                position: BadgePosition.topEnd(top: 5, end: 5),
+                badgeContent: Text(
+                  '${snapshot.data['pendingRequestList'].length}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.person_add_alt_rounded),
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => FriendRequests(
+                                  currentUser: currentUser,
+                                )));
+                  },
+                ),
+              )
+            : Badge(
+                position: BadgePosition.topEnd(top: 5, end: 5),
+                badgeContent: null,
+                showBadge: false,
+                child: IconButton(
+                  icon: const Icon(Icons.person_add_alt_rounded),
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => FriendRequests(
+                                  currentUser: currentUser,
+                                )));
+                  },
+                ),
+              );
+      },
+    );
   }
 
   void getlocation() async {
@@ -122,14 +177,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         lat = event.latitude!;
         long = event.longitude!;
       });
-      await DatabaseMethods().updateUserLocation(user['uid'], lat, long);
+      await DatabaseMethods().updateUserLocation(currentUser['uid'], lat, long);
     });
     setState(() {
       lat = _locationData.latitude!;
       long = _locationData.longitude!;
     });
 
-    await DatabaseMethods().updateUserLocation(user['uid'], lat, long);
+    await DatabaseMethods().updateUserLocation(currentUser['uid'], lat, long);
   }
 
   @override
@@ -146,22 +201,18 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               title: const Text('NeverLost'),
               actions: [
                 notificationBadge(),
+                friendRequestBadge(),
                 IconButton(
                     onPressed: () {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => Profile(user: user)));
+                              builder: (context) =>
+                                  Profile(currentUser: currentUser)));
                     },
                     icon: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
-                      child: ValueListenableBuilder(
-                          valueListenable: Hive.box('IMAGEBOXKEY').listenable(),
-                          builder: (context, Box box, widget) {
-                            return box.get('IMAGEDATAKEY') != null
-                                ? Image.file(File(box.get('IMAGEDATAKEY')))
-                                : Image.network(user['photoURL']);
-                          }),
+                      child: Image.network(currentUser['photoURL']),
                     )),
               ],
               bottom: PreferredSize(
@@ -215,15 +266,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             body: TabBarView(
               controller: _tabController,
               children: [
-                // Chats(user: user),
-                // GroupChats(user: user),
-                // Search(uid: user['uid']),
-                ChatList(currentUser: user),
-                GroupChats(
-                  user: user,
-                ),
-                Search(uid: user['uid']),
-                Setting(userUID: user['uid'])
+                ChatList(currentUser: currentUser),
+                Loading(),
+                Search(currentUser: currentUser),
+                Loading(),
               ],
             ),
           );

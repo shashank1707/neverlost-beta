@@ -10,7 +10,7 @@ import 'package:neverlost_beta/Screens/chatroom.dart';
 import 'package:neverlost_beta/Screens/friendlist.dart';
 
 class ChatList extends StatefulWidget {
-  final currentUser;
+  final Map<String, dynamic> currentUser;
 
   const ChatList({Key? key, required this.currentUser}) : super(key: key);
 
@@ -24,7 +24,6 @@ class _ChatListState extends State<ChatList> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getChats().then((v) {
       setState(() {
@@ -207,7 +206,7 @@ class _ChatListState extends State<ChatList> {
                   );
                 },
               )
-            : SizedBox();
+            : const SizedBox();
       },
     );
   }
@@ -218,7 +217,7 @@ class _ChatListState extends State<ChatList> {
     var width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: backgroundColor2,
-      body: isloading ? Loading() : chatList(height, width),
+      body: isloading ? const Loading() : chatList(height, width),
       floatingActionButton: FloatingActionButton(
         backgroundColor: backgroundColor1,
         elevation: 10,
@@ -229,7 +228,7 @@ class _ChatListState extends State<ChatList> {
                   builder: (context) =>
                       FriendsList(currentUser: widget.currentUser)));
         },
-        child: Icon(CupertinoIcons.chat_bubble_2),
+        child: const Icon(Icons.chat_rounded),
       ),
     );
   }

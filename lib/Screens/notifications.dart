@@ -6,197 +6,143 @@ import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 
 class Notifications extends StatefulWidget {
-  final Map<String, dynamic> user;
-
-  const Notifications({required this.user, Key? key}) : super(key: key);
+  final Map<String, dynamic> currentUser;
+  const Notifications({required this.currentUser, Key? key}) : super(key: key);
 
   @override
   _NotificationsState createState() => _NotificationsState();
 }
 
-class _NotificationsState extends State<Notifications>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    _tabController = TabController(length: 1, vsync: this, initialIndex: 0);
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: backgroundColor2,
-      appBar: AppBar(
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(15))),
-        backgroundColor: backgroundColor1,
-        elevation: 0,
-        title: const Text('Notifications'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TabBar(
-                labelColor: backgroundColor1,
-                unselectedLabelColor: backgroundColor2,
-                padding: const EdgeInsets.all(8),
-                isScrollable: true,
-                indicatorSize: TabBarIndicatorSize.tab,
-                controller: _tabController,
-                indicator: BoxDecoration(
-                  color: backgroundColor2,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                tabs: [
-                  Container(
-                      alignment: Alignment.center,
-                      height: 30,
-                      child: const Text(
-                        'Friend Requests',
-                      )),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          FriendRequests(
-            user: widget.user,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class FriendRequests extends StatefulWidget {
-  final Map<String, dynamic> user;
-
-  const FriendRequests({required this.user, Key? key}) : super(key: key);
-
-  @override
-  _FriendRequestsState createState() => _FriendRequestsState();
-}
-
-class _FriendRequestsState extends State<FriendRequests> {
+class _NotificationsState extends State<Notifications> {
   late Stream userStream;
   bool isLoading = true;
+  Map<String, dynamic> currentUser = {};
 
   @override
   void initState() {
-    getCurrentUserSnapshots();
+    getCurrentUser();
     super.initState();
+  }
+
+  void getCurrentUser() async {
+    await DatabaseMethods().findUserWithUID(widget.currentUser['uid']).then((user) {
+        setState(() {
+          currentUser = user;
+        });
+      });
+    getCurrentUserSnapshots();
   }
 
   void getCurrentUserSnapshots() async {
-    userStream = await DatabaseMethods().getUserSnapshots(widget.user['uid']);
+    userStream =
+        await DatabaseMethods().getUserSnapshots(widget.currentUser['uid']);
     setState(() {
       isLoading = false;
     });
-    print(widget.user);
+    print(widget.currentUser);
   }
 
-  void acceptFriendRequest(currentUserUID, friendUserUID, index) async {
-    await DatabaseMethods().findUserWithUID(friendUserUID).then((value) {
-      var friendUser = value;
-      friendUser['friendList'].add(currentUserUID);
-      DatabaseMethods().updateUserDatabase(friendUser);
-      Fluttertoast.showToast(msg: '${friendUser['name']} is now your friend.');
-    });
-    await DatabaseMethods().findUserWithUID(currentUserUID).then((value) {
-      var currentUser = value;
-      currentUser['friendList'].add(friendUserUID);
-      currentUser['pendingRequestList'].removeAt(index);
-      DatabaseMethods().updateUserDatabase(currentUser);
-    });
+  void deleteNotifications() async {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Clear Notifications',style: TextStyle(color: backgroundColor1)),
+            content:
+                const Text('All the notifications will be deleted permanently.'),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel',
+                      style: TextStyle(color: textColor1))),
+              TextButton(
+                  onPressed: () async {
+                    currentUser['notifications'] = [];
+                    await DatabaseMethods().updateUserDatabase(currentUser);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Confirm',
+                      style: TextStyle(color: backgroundColor1))),
+            ],
+          );
+        });
   }
 
-  void rejectFriedRequest(currentUserUID, index) async {
-    await DatabaseMethods().findUserWithUID(currentUserUID).then((value) {
-      var currentUser = value;
-      currentUser['pendingRequestList'].removeAt(index);
-      DatabaseMethods().updateUserDatabase(currentUser);
-    });
+  Icon getNotificationIcon(type) {
+    if (type == 'accept') {
+      return const Icon(
+        Icons.person_add,
+        color: themeColor1,
+      );
+    } else if (type == 'reject') {
+      return const Icon(
+        Icons.person_add_disabled_rounded,
+        color: textColor1,
+      );
+    } else if (type == 'unfriend') {
+      return const Icon(
+        Icons.person_off,
+        color: Colors.redAccent,
+      );
+    }
+
+    return const Icon(Icons.notifications_active_outlined);
   }
 
-  Widget friendRequestTiles(height, width) {
+  Widget notificationTiles(height, width) {
     return StreamBuilder(
       stream: userStream,
       builder: (context, AsyncSnapshot snapshot) {
         print(snapshot.hasData);
-        return snapshot.hasData && snapshot.data['pendingRequestList'].length > 0
+        return snapshot.hasData && snapshot.data['notifications'].length > 0
             ? ListView.builder(
                 reverse: true,
-                itemCount: snapshot.data['pendingRequestList'].length,
+                itemCount: snapshot.data['notifications'].length,
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
-                  return StreamBuilder(
-                    stream: DatabaseMethods().getUserSnapshots(
-                        snapshot.data['pendingRequestList'][index]),
-                    builder: (context, AsyncSnapshot snap) {
-                      Map<String, dynamic> friendUser =
-                          snap.hasData ? snap.data.data() : {};
-                      return snap.hasData
-                          ? ListTile(
-                              leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(100),
-                                  child: Image.network(friendUser['photoURL'])),
-                              title: Text(friendUser['name'],
-                                  style:
-                                      const TextStyle(fontWeight: FontWeight.bold),
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,),
-                              subtitle: Text(friendUser['email'],
-                                  style:
-                                      const TextStyle(fontWeight: FontWeight.bold),
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,),
-                              trailing: Wrap(children: [
-                                IconButton(
-                                    onPressed: () {
-                                      acceptFriendRequest(widget.user['uid'],
-                                          friendUser['uid'], index);
-                                    },
-                                    icon: const Icon(
-                                      Icons.check_rounded,
-                                      color: Colors.green,
-                                    )),
-                                IconButton(
-                                    onPressed: () {
-                                      rejectFriedRequest(
-                                          widget.user['uid'], index);
-                                    },
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Colors.red,
-                                    ))
-                              ]),
-                            )
-                          : Container();
-                    },
+                  currentUser['notifications'][index]['seen'] = true;
+                  DatabaseMethods().updateUserDatabase(currentUser);
+                  return ListTile(
+                    leading: getNotificationIcon(
+                        currentUser['notifications'][index]['type']),
+                    title: RichText(
+                      textAlign: TextAlign.left,
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text:
+                                "${snapshot.data['notifications'][index]['name']}",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black)),
+                        TextSpan(
+                            text:
+                                " ${snapshot.data['notifications'][index]['message']}",
+                            style: const TextStyle(color: Colors.black)),
+                      ]),
+                    ),
                   );
                 },
               )
             : SizedBox(
-              height: height,
-              width: width,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: const [
-                  Icon(Icons.notes_rounded, color: Colors.grey, size: 200,),
-                  Text('No friend Requests', style: TextStyle(color: backgroundColor1, fontSize: 20),)
-                ],
-              ),
-            );
+                height: height,
+                width: width,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.notes_rounded,
+                      color: Colors.grey,
+                      size: 200,
+                    ),
+                    Text(
+                      'No New Notifications',
+                      style: TextStyle(color: backgroundColor1, fontSize: 20),
+                    )
+                  ],
+                ),
+              );
       },
     );
   }
@@ -206,7 +152,22 @@ class _FriendRequestsState extends State<FriendRequests> {
     var height = MediaQuery.of(context).size.height;
     var width = MediaQuery.of(context).size.width;
     return Scaffold(
-      body: isLoading ? const Loading() : friendRequestTiles(height, width),
+      appBar: AppBar(
+        backgroundColor: backgroundColor1,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(15))),
+        title: Text('Notifications'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () {
+              deleteNotifications();
+            },
+          )
+        ],
+      ),
+      body: isLoading ? const Loading() : notificationTiles(height, width),
     );
   }
 }

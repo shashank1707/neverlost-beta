@@ -35,6 +35,7 @@ class AuthMethods {
 
   signout() async {
     await auth.signOut();
-    HiveDB().deleteData();
+    GoogleSignIn _googleSignIn = GoogleSignIn();
+    await _googleSignIn.disconnect();
   }
 }

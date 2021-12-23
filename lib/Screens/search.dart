@@ -6,9 +6,9 @@ import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Screens/userprofile.dart';
 
 class Search extends StatefulWidget {
-  final String uid;
+  final Map<String, dynamic> currentUser;
 
-  const Search({required this.uid, Key? key}) : super(key: key);
+  const Search({required this.currentUser, Key? key}) : super(key: key);
 
   @override
   _SearchState createState() => _SearchState();
@@ -20,26 +20,16 @@ class _SearchState extends State<Search> {
   bool isSearching = false;
   bool isLoading = true;
 
-  Map<String, dynamic> user = {};
-
   final TextEditingController _searchController = TextEditingController();
 
   late Stream searchStream;
 
   @override
   void initState() {
-    getCurrentUser();
-    super.initState();
-  }
-
-  void getCurrentUser() async {
-    print('getting');
-    await DatabaseMethods().findUserWithUID(widget.uid).then((value) {
-      setState(() {
-        user = value;
+    setState(() {
         isLoading = false;
       });
-    });
+    super.initState();
   }
 
   void onSearch() async {
@@ -62,12 +52,12 @@ class _SearchState extends State<Search> {
     return StreamBuilder(
       stream: searchStream,
       builder: (context, AsyncSnapshot snapshot) {
-        return snapshot.hasData
+        return snapshot.hasData && snapshot.data.docs.length > 0
             ? ListView.builder(
                 shrinkWrap: true,
                 itemCount: snapshot.data.docs.length,
                 itemBuilder: (context, index) {
-                  var ds = snapshot.data.docs[index];
+                  var searchedUser = snapshot.data.docs[index];
                   return Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -76,17 +66,17 @@ class _SearchState extends State<Search> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => UserProfile(
-                                    currentUser: user, userUID: ds['uid'])));
+                                    currentUser: widget.currentUser, friendUserUID: searchedUser['uid'])));
                       },
                       leading: ClipRRect(
                           borderRadius: BorderRadius.circular(100),
-                          child: Image.network(ds['photoURL'])),
-                      title: Text(ds['name'],
+                          child: Image.network(searchedUser['photoURL'])),
+                      title: Text(searchedUser['name'],
                           style: TextStyle(fontWeight: FontWeight.bold),
                                 softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,),
-                      subtitle: Text(ds['email'],
+                      subtitle: Text(searchedUser['email'],
                           style: TextStyle(fontWeight: FontWeight.bold),
                                 softWrap: true,
                                 overflow: TextOverflow.ellipsis,
@@ -105,47 +95,70 @@ class _SearchState extends State<Search> {
     );
   }
 
-  Widget recentSearchTiles() {
-    return ListView.builder(
-      itemCount: user['recentSearchList'].length,
-      shrinkWrap: true,
-      itemBuilder: (context, index) {
-        return StreamBuilder(
-          stream: DatabaseMethods().getUserSnapshots(user['recentSearchList'][index]),
-          builder: (context, AsyncSnapshot snapshot){
-            Map<String, dynamic> searchedUser = snapshot.hasData ? snapshot.data.data() : {};
-            return snapshot.hasData
-            ? Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: ListTile(
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => UserProfile(
-                                currentUser: user,
-                                userUID: searchedUser['uid'])));
-                  },
-                  leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: Image.network(searchedUser['photoURL'])),
-                  title: Text(searchedUser['name'],
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,),
-                  subtitle: Text(searchedUser['email'],
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,),
-                  trailing: Icon(Icons.chevron_right_rounded),
+  Widget recentSearchTiles(height, width) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 8, 8),
+          child: Text('Recent Searches', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        widget.currentUser['recentSearchList'].length > 0 ? Expanded(
+          child: ListView.builder(
+            itemCount: widget.currentUser['recentSearchList'].length,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              return StreamBuilder(
+                stream: DatabaseMethods().getUserSnapshots(widget.currentUser['recentSearchList'][index]),
+                builder: (context, AsyncSnapshot snapshot){
+                  Map<String, dynamic> searchedUser = snapshot.hasData ? snapshot.data.data() : {};
+                  return snapshot.hasData
+                  ? Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => UserProfile(
+                                      currentUser: widget.currentUser,
+                                      friendUserUID: searchedUser['uid'])));
+                        },
+                        leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: Image.network(searchedUser['photoURL'])),
+                        title: Text(searchedUser['name'],
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                                      softWrap: true,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,),
+                        subtitle: Text(searchedUser['email'],
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                                      softWrap: true,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,),
+                        trailing: Icon(Icons.chevron_right_rounded),
+                      ),
+                    )
+                  : const Text('');
+                },
+              );        
+            },
+          ),
+        ) :  Expanded(
+          child: SizedBox(
+                height: height,
+                width: width,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.notes_rounded, color: Colors.grey, size: 200,),
+                    Text('No Recent Searches', style: TextStyle(color: backgroundColor1, fontSize: 20),)
+                  ],
                 ),
-              )
-            : const Text('');
-          },
-        );        
-      },
+              ),
+        ),
+      ],
     );
   }
 
@@ -203,6 +216,7 @@ class _SearchState extends State<Search> {
                           onPressed: () {
                             setState(() {
                               _searchController.clear();
+                              isSearching = false;
                             });
                           },
                         )
@@ -265,7 +279,7 @@ class _SearchState extends State<Search> {
                   ),
                   isSearching
                       ? Expanded(child: searchList())
-                      : Expanded(child: recentSearchTiles())
+                      : Expanded(child: recentSearchTiles(height, width))
                 ],
               ),
             ),

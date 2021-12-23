@@ -5,15 +5,12 @@ import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Screens/chatroom.dart';
 
-
-// TODO: message button function
-
 class UserProfile extends StatefulWidget {
   final Map<String, dynamic> currentUser;
-  final String userUID;
+  final String friendUserUID;
 
   const UserProfile(
-      {required this.currentUser, required this.userUID, Key? key})
+      {required this.currentUser, required this.friendUserUID, Key? key})
       : super(key: key);
 
   @override
@@ -22,53 +19,63 @@ class UserProfile extends StatefulWidget {
 
 class _UserProfileState extends State<UserProfile> {
   bool isLoading = true;
+  Map<String, dynamic> currentUser = {};
 
   @override
   void initState() {
-    updateRecentSearchList();
+    getCurrentUser();
     super.initState();
   }
 
+  void getCurrentUser() async {
+    await DatabaseMethods()
+        .findUserWithUID(widget.currentUser['uid'])
+        .then((user) {
+      setState(() {
+        currentUser = user;
+      });
+    });
+    updateRecentSearchList();
+  }
+
   void updateRecentSearchList() async {
-    if (!widget.currentUser['recentSearchList'].contains(widget.userUID)) {
-      widget.currentUser['recentSearchList'].add(widget.userUID);
+    if (!currentUser['recentSearchList']
+        .contains(widget.friendUserUID)) {
+      currentUser['recentSearchList'].add(widget.friendUserUID);
     }
 
-    await DatabaseMethods().updateUserDatabase(widget.currentUser);
+    await DatabaseMethods().updateUserDatabase(currentUser);
     setState(() {
       isLoading = false;
     });
   }
 
-  void sendFriendRequest(userProfile) async {
-    userProfile['pendingRequestList'].add(widget.currentUser['uid']);
-    await DatabaseMethods().updateUserDatabase(userProfile);
-  }
-
-  void unfriend(userProfile) async {
-    userProfile['friendList'].remove(widget.currentUser['uid']);
-    await DatabaseMethods().updateUserDatabase(userProfile);
-    widget.currentUser['friendList'].remove(userProfile['uid']);
-    await DatabaseMethods().updateUserDatabase(widget.currentUser);
-  }
-
   String getFriendStatus(userProfile) {
-    if (userProfile['friendList'].contains(widget.currentUser['uid'])) {
+    if (userProfile['friendList'].contains(currentUser['uid'])) {
       return 'Unfriend';
     } else if (userProfile['pendingRequestList']
-        .contains(widget.currentUser['uid'])) {
+        .contains(currentUser['uid'])) {
       return 'Request Sent';
+    } else if (currentUser['pendingRequestList']
+        .contains(userProfile['uid'])) {
+      return 'Accept Request';
     } else {
       return 'Add Friend';
     }
   }
 
-  void friendButton(userProfile) {
-    if(getFriendStatus(userProfile) == 'Add Friend'){
-      sendFriendRequest(userProfile);
-    }else if(getFriendStatus(userProfile) == 'Unfriend'){
-      unfriend(userProfile);
+  void friendButton(userProfile) async {
+    if (getFriendStatus(userProfile) == 'Add Friend') {
+      await DatabaseMethods()
+          .sendFriendRequest(currentUser['uid'], widget.friendUserUID);
+    } else if (getFriendStatus(userProfile) == 'Unfriend') {
+      await DatabaseMethods().unFriend(currentUser['uid'],
+          currentUser['name'], widget.friendUserUID);
+    } else if (getFriendStatus(userProfile) == 'Accept Request') {
+      await DatabaseMethods().acceptFriendRequest(currentUser['uid'],
+          currentUser['name'], widget.friendUserUID);
     }
+    getCurrentUser();
   }
 
   void showPhoto(height, width, userProfile) {
@@ -108,7 +115,7 @@ class _UserProfileState extends State<UserProfile> {
               title: Text('Profile'),
             ),
             body: StreamBuilder(
-              stream: DatabaseMethods().getUserSnapshots(widget.userUID),
+              stream: DatabaseMethods().getUserSnapshots(widget.friendUserUID),
               builder: (context, AsyncSnapshot snapshot) {
                 var userProfile = snapshot.hasData ? snapshot.data.data() : {};
                 return !snapshot.hasData
@@ -159,14 +166,16 @@ class _UserProfileState extends State<UserProfile> {
                                           MainAxisAlignment.center,
                                       children: [
                                         MaterialButton(
-                                          onPressed: (){
+                                          onPressed: () {
                                             friendButton(userProfile);
                                           },
                                           child: Container(
                                             padding: EdgeInsets.all(8),
                                             decoration: BoxDecoration(
                                                 color: backgroundColor2,
-                                                border: Border.all(width: 2, color: backgroundColor2),
+                                                border: Border.all(
+                                                    width: 2,
+                                                    color: backgroundColor2),
                                                 borderRadius:
                                                     BorderRadius.circular(100)),
                                             child: Text(
@@ -177,11 +186,26 @@ class _UserProfileState extends State<UserProfile> {
                                           ),
                                         ),
                                         Visibility(
-                                          visible: userProfile['friendList'].contains(widget.currentUser['uid']),
+                                          visible: userProfile['friendList']
+                                              .contains(
+                                                  currentUser['uid']),
                                           child: MaterialButton(
-                                            onPressed: userProfile['friendList'].contains(widget.currentUser['uid']) ? () {
-                                              Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(currentUser: widget.currentUser, friendUser: userProfile)));
-                                            } : null,
+                                            onPressed: userProfile['friendList']
+                                                    .contains(widget
+                                                        .currentUser['uid'])
+                                                ? () {
+                                                    Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                ChatRoom(
+                                                                    currentUser:
+                                                                        widget
+                                                                            .currentUser,
+                                                                    friendUser:
+                                                                        userProfile)));
+                                                  }
+                                                : null,
                                             child: Container(
                                               padding: EdgeInsets.all(8),
                                               decoration: BoxDecoration(
@@ -189,7 +213,8 @@ class _UserProfileState extends State<UserProfile> {
                                                       color: backgroundColor2,
                                                       width: 2),
                                                   borderRadius:
-                                                      BorderRadius.circular(100)),
+                                                      BorderRadius.circular(
+                                                          100)),
                                               child: Text(
                                                 'Message',
                                                 style: TextStyle(
@@ -231,7 +256,8 @@ class _UserProfileState extends State<UserProfile> {
                               ),
                             ),
                             Visibility(
-                              visible: userProfile['friendList'].contains(widget.currentUser['uid']),
+                              visible: userProfile['friendList']
+                                  .contains(currentUser['uid']),
                               child: Column(
                                 children: [
                                   ListTile(
@@ -240,7 +266,8 @@ class _UserProfileState extends State<UserProfile> {
                                         color: textColor1,
                                       ),
                                       title: const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 4.0),
                                         child: Text(
                                           'Status',
                                           style: TextStyle(
@@ -262,7 +289,8 @@ class _UserProfileState extends State<UserProfile> {
                                         color: textColor1,
                                       ),
                                       title: const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 4.0),
                                         child: Text(
                                           'Phone',
                                           style: TextStyle(

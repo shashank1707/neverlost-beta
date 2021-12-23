@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:neverlost_beta/Components/constants.dart';
+import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/hive.dart';
@@ -11,9 +12,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class Profile extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final Map<String, dynamic> currentUser;
 
-  const Profile({required this.user, Key? key}) : super(key: key);
+  const Profile({required this.currentUser, Key? key}) : super(key: key);
 
   @override
   _ProfileState createState() => _ProfileState();
@@ -24,12 +25,32 @@ class _ProfileState extends State<Profile> {
   TextEditingController statusController = TextEditingController();
   TextEditingController nameController = TextEditingController();
 
+  Map<String, dynamic> currentUser = {};
+  bool isLoading = true;
+
   @override
   void initState() {
-    phoneController.text = widget.user['phone'];
-    statusController.text = widget.user['status'];
-    nameController.text = widget.user['name'];
+    getCurrentUser();
     super.initState();
+  }
+
+  void getCurrentUser() async {
+    DatabaseMethods().getUserSnapshots(widget.currentUser['uid']).listen((user) {
+        setState(() {
+          currentUser = user.data()!;
+          phoneController.text = currentUser['phone'];
+          statusController.text = currentUser['status'];
+          nameController.text = currentUser['name'];
+          isLoading = false;
+        });
+      });
+    // await DatabaseMethods().findUserWithUID(widget.currentUser['uid']).then((user) {
+    //     setState(() {
+    //       currentUser = user;
+    //       isLoading = false;
+    //     });
+    //   });
+    
   }
 
   void showPhoto(height, width) {
@@ -47,7 +68,7 @@ class _ProfileState extends State<Profile> {
                     width: width,
                     decoration: BoxDecoration(
                         image: DecorationImage(
-                            image: NetworkImage(widget.user['photoURL']),
+                            image: NetworkImage(widget.currentUser['photoURL']),
                             fit: BoxFit.fitWidth)),
                   ),
                 ]),
@@ -72,9 +93,8 @@ class _ProfileState extends State<Profile> {
                       style: TextStyle(color: textColor1))),
               TextButton(
                   onPressed: () {
-                    var userData = widget.user;
+                    var userData = currentUser;
                     userData['phone'] = phoneController.text;
-                    HiveDB().updateUserData(userData);
                     DatabaseMethods().updateUserDatabase(userData).then((v) {
                       Navigator.pop(context);
                     });
@@ -116,9 +136,8 @@ class _ProfileState extends State<Profile> {
                       style: TextStyle(color: textColor1))),
               TextButton(
                   onPressed: () {
-                    var userData = widget.user;
+                    var userData = currentUser;
                     userData['status'] = statusController.text;
-                    HiveDB().updateUserData(userData);
                     DatabaseMethods().updateUserDatabase(userData).then((v) {
                       Navigator.pop(context);
                     });
@@ -162,9 +181,8 @@ class _ProfileState extends State<Profile> {
                       style: TextStyle(color: textColor1))),
               TextButton(
                   onPressed: () {
-                    var userData = widget.user;
+                    var userData = currentUser;
                     userData['name'] = nameController.text;
-                    HiveDB().updateUserData(userData);
                     DatabaseMethods().updateUserDatabase(userData).then((v) {
                       Navigator.pop(context);
                     });
@@ -249,8 +267,7 @@ class _ProfileState extends State<Profile> {
         Fluttertoast.showToast(msg: 'Profile Picture Updating');
 
           var val =
-        await DatabaseMethods().changeProfilePhoto(croppedFile.path, widget.user['uid']);
-        await HiveDB().setProPicData(croppedFile.path);
+        await DatabaseMethods().changeProfilePhoto(croppedFile.path, currentUser['uid']);
         Fluttertoast.showToast(msg: 'Profile Picture Updated');
         return val;
     }
@@ -261,7 +278,7 @@ class _ProfileState extends State<Profile> {
   Widget build(BuildContext context) {
     var height = MediaQuery.of(context).size.height;
     var width = MediaQuery.of(context).size.width;
-    return Scaffold(
+    return isLoading ? const Loading() : Scaffold(
       backgroundColor: backgroundColor2,
       appBar: AppBar(
         // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -319,28 +336,23 @@ class _ProfileState extends State<Profile> {
                                         child: SimpleDialog(
                                             backgroundColor: Colors.black,
                                             children: [
-                                              ValueListenableBuilder(valueListenable: Hive.box('IMAGEBOXKEY').listenable(), builder: (context,Box box,w){
-                                                dynamic image = box.get('IMAGEDATAKEY') != null
-                                                                        ? FileImage(File(box.get('IMAGEDATAKEY'))) 
-                                                                        : NetworkImage(widget.user['photoURL']);
-                                                  return Container(
+                                              Container(
                                                 width: width,
                                                 height: width,
                                                 decoration: BoxDecoration(
                                                     image: DecorationImage(
-                                                        image:  image,
+                                                        image: NetworkImage(currentUser['photoURL']),
                                                         fit: BoxFit.fitWidth)),
-                                              );
-                                                }),
+                                              )
                                               
                                             ]),
                                       );
                                     });
                               },
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.photo,
                               ),
-                              label: Text(
+                              label: const Text(
                                 'View',
                                 style: TextStyle(color: backgroundColor2),
                               ),
@@ -350,10 +362,10 @@ class _ProfileState extends State<Profile> {
                                 _pickImage(ImageSource.gallery)
                                     .then((value) {});
                               },
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.photo_library,
                               ),
-                              label: Text(
+                              label: const Text(
                                 'Gallery',
                                 style: TextStyle(color: backgroundColor2),
                               ),
@@ -362,10 +374,10 @@ class _ProfileState extends State<Profile> {
                               onPressed: () {
                                 _pickImage(ImageSource.camera);
                               },
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.camera,
                               ),
-                              label: Text(
+                              label: const Text(
                                 'Camera',
                                 style: TextStyle(color: backgroundColor2),
                               ),
@@ -386,50 +398,66 @@ class _ProfileState extends State<Profile> {
                       //               decoration: BoxDecoration(
                       //                   image: DecorationImage(
                       //                       image: NetworkImage(
-                      //                           widget.user['photoURL']),
+                      //                           currentUser['photoURL']),
                       //                       fit: BoxFit.fitWidth)),
                       //             ),
                       //           ]);
                       //     });
                     },
-                    child: ValueListenableBuilder(valueListenable: Hive.box('IMAGEBOXKEY').listenable(), builder: (context,Box box,w){
-                      dynamic image =box.get('IMAGEDATAKEY') != null
-                                  ? FileImage(File(box.get('IMAGEDATAKEY')))
-                                  : NetworkImage(widget.user['photoURL']);
-                      return Padding(
+                    child: Padding(
                         padding: const EdgeInsets.all(24.0),
                         child: Container(
                         width: width/3,
                         height: width/3,
                         decoration:BoxDecoration(
                           shape: BoxShape.circle,
-                          image: DecorationImage(image: image,fit: BoxFit.fitWidth)
+                          image: DecorationImage(image: NetworkImage(currentUser['photoURL']),fit: BoxFit.fitWidth)
                         )
                     ),
-                      );
-                    }),
+                      ),
                   ),                 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Stack(
+                    alignment: Alignment.center,
+                    // alignment: WrapAlignment.center,
+                    // crossAxisAlignment: WrapCrossAlignment.center,
+                    // mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Flexible(
-                        child: Text(
-                          widget.user['name'],
-                          style: const TextStyle(
-                              color: backgroundColor2,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold),
-                              softWrap: true,
+                      // IconButton(
+                      //   icon: const Icon(
+                      //     Icons.edit,
+                      //     color: Colors.transparent,
+                      //   ),
+                      //   onPressed: () {
+                          
+                      //   },
+                      // ),
+                      Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: width / 1.85,
+                          child: Text(
+                            currentUser['name'],
+                            style: const TextStyle(
+                                color: backgroundColor2,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                                softWrap: true,
+                          ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.edit,
-                          color: backgroundColor2,
+                      Positioned(
+                        right: 50,
+                        // alignment: Alignment.centerRight,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: backgroundColor2,
+                          ),
+                          onPressed: () {
+                            changeName();
+                          },
                         ),
-                        onPressed: () {
-                          changeName();
-                        },
                       )
                     ],
                   ),
@@ -455,7 +483,7 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
               subtitle: Text(
-                widget.user['email'],
+                currentUser['email'],
                 style: const TextStyle(
                     color: textColor2,
                     fontSize: 16,
@@ -481,7 +509,7 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
               subtitle: Text(
-                widget.user['phone'],
+                currentUser['phone'],
                 style: const TextStyle(
                     color: textColor2,
                     fontSize: 16,
@@ -511,7 +539,7 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
               subtitle: Text(
-                widget.user['status'],
+                currentUser['status'],
                 style: const TextStyle(
                     color: textColor2,
                     fontSize: 16,

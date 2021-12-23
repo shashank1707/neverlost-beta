@@ -17,6 +17,7 @@ class DatabaseMethods {
       "phone": phone ?? 'Enter your Mobile Number',
       "recentSearchList": [],
       "friendList": [],
+      "notifications": [],
       "pendingRequestList": [],
       'latitude': 0.0,
       'longitude': 0.0,
@@ -86,7 +87,7 @@ class DatabaseMethods {
     return firestore.collection('users').doc(uid).snapshots();
   }
 
-  getUserData(uid) async {
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(uid) async {
     return firestore.collection('users').doc(uid).get();
   }
 
@@ -95,7 +96,7 @@ class DatabaseMethods {
     return await firestore.collection('chatRooms').doc(chatRoomID).get();
   }
 
-  Future<void> unFriend(currentUserUid, targetUid) async {
+  Future<void> unFriend(currentUserUid, currentUserName, targetUid) async {
     await firestore
         .collection('users')
         .doc(currentUserUid)
@@ -109,27 +110,27 @@ class DatabaseMethods {
         .collection('users')
         .doc(targetUid)
         .update({
-          'friendList': FieldValue.arrayRemove([currentUserUid])
+          'friendList': FieldValue.arrayRemove([currentUserUid]),
+          'notifications': FieldValue.arrayUnion([
+            {
+              'type': 'unfriend',
+              'name': currentUserName,
+              'message': 'removed you as a friend.',
+              'seen': false
+            }
+          ])
         })
         .then((value) => print("User's Property Deleted"))
         .catchError(
             (error) => print("Failed to delete user's property: $error"));
   }
 
-  Future<void> sendFriendRequest(currenUserUid, currentUserEmail,
-      currentUserPhotoUrl, currentUserName, targetUid) async {
+  Future<void> sendFriendRequest(currentUserUID, targetUID) async {
     return await firestore
         .collection('users')
-        .doc(targetUid)
+        .doc(targetUID)
         .update({
-          'pendingRequestList': FieldValue.arrayUnion([
-            {
-              'email': currentUserEmail,
-              'uid': currenUserUid,
-              'name': currentUserName,
-              'photoURL': currentUserPhotoUrl
-            }
-          ])
+          'pendingRequestList': FieldValue.arrayUnion([currentUserUID])
         })
         .then((value) => print("User's Property Added"))
         .catchError(
@@ -141,19 +142,40 @@ class DatabaseMethods {
     return firestore.collection('users').doc(uid).snapshots();
   }
 
-  Future<void> acceptFriendRequest(currentUserUid, Map targetUser) async {
-    await firestore.collection('users').doc(currentUserUid).update({
-      'pendingRequestList': FieldValue.arrayRemove([targetUser]),
-      'friendList': FieldValue.arrayUnion([targetUser['uid']])
+  Future<void> acceptFriendRequest(
+      currentUserUID, currentUserName, targetUserUID) async {
+    await firestore.collection('users').doc(currentUserUID).update({
+      'pendingRequestList': FieldValue.arrayRemove([targetUserUID]),
+      'friendList': FieldValue.arrayUnion([targetUserUID])
     });
-    await firestore.collection('users').doc(targetUser['uid']).update({
-      'friendList': FieldValue.arrayUnion([currentUserUid])
+    await firestore.collection('users').doc(targetUserUID).update({
+      'friendList': FieldValue.arrayUnion([currentUserUID]),
+      'notifications': FieldValue.arrayUnion([
+        {
+          'type': 'accept',
+          'name': currentUserName,
+          'message': 'accepted your friend request.',
+          'seen': false
+        }
+      ])
     });
   }
 
-  Future<void> rejectFriendRequest(currentUserUid, Map target) async {
+  Future<void> rejectFriendRequest(
+      currentUserUid, currentUserName, targetUserUID) async {
     await firestore.collection('users').doc(currentUserUid).update({
-      'pendingRequestList': FieldValue.arrayRemove([target])
+      'pendingRequestList': FieldValue.arrayRemove([targetUserUID])
+    });
+
+    await firestore.collection('users').doc(targetUserUID).update({
+      'notifications': FieldValue.arrayUnion([
+        {
+          'type': 'reject',
+          'name': currentUserName,
+          'message': 'rejected your friend request.',
+          'seen': false
+        }
+      ])
     });
   }
 
@@ -165,6 +187,7 @@ class DatabaseMethods {
       'seen': false,
       'timestamp': DateTime.now(),
       'users': [user1, user2],
+      'isImage': false,
       'isSharing': [false, false]
     };
 
@@ -295,25 +318,53 @@ class DatabaseMethods {
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> findGroupChat(uid) {
-    return firestore.collection('groupChats').where('users', arrayContains: uid).orderBy('timestamp', descending: true).snapshots();
+    return firestore
+        .collection('groupChats')
+        .where('users', arrayContains: uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
   }
 
-  Future<Stream<QuerySnapshot<Map<String, dynamic>>>> getGroupMessages(groupChatID) async {
-    return firestore.collection('groupChats').doc(groupChatID).collection('chats').orderBy('timestamp', descending: true).snapshots();
+  Future<Stream<QuerySnapshot<Map<String, dynamic>>>> getGroupMessages(
+      groupChatID) async {
+    return firestore
+        .collection('groupChats')
+        .doc(groupChatID)
+        .collection('chats')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getUnseenGroupMessages(groupChatID, uid){
-    return firestore.collection('groupChats').doc(groupChatID).collection('chats').where('notSeenBy', arrayContains: uid).snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> getUnseenGroupMessages(
+      groupChatID, uid) {
+    return firestore
+        .collection('groupChats')
+        .doc(groupChatID)
+        .collection('chats')
+        .where('notSeenBy', arrayContains: uid)
+        .snapshots();
   }
 
-  addGroupMessage(groupChatID , messageInfo, lastMessageInfo) async {
-    await firestore.collection('groupChats').doc(groupChatID).collection('chats').doc().set(messageInfo);
+  addGroupMessage(groupChatID, messageInfo, lastMessageInfo) async {
+    await firestore
+        .collection('groupChats')
+        .doc(groupChatID)
+        .collection('chats')
+        .doc()
+        .set(messageInfo);
 
-    await firestore.collection('groupChats').doc(groupChatID).update(lastMessageInfo);
+    await firestore
+        .collection('groupChats')
+        .doc(groupChatID)
+        .update(lastMessageInfo);
   }
 
   updateGroupSeenInfo(groupChatID, messageID, info) async {
-    await firestore.collection('groupChats').doc(groupChatID).collection('chats').doc(messageID).update(info);
+    await firestore
+        .collection('groupChats')
+        .doc(groupChatID)
+        .collection('chats')
+        .doc(messageID)
+        .update(info);
   }
-
 }
