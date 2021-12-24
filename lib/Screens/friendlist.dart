@@ -84,13 +84,13 @@ class _FriendsListState extends State<FriendsList> {
                         MaterialPageRoute(
                             builder: (context) => ChatRoom(
                                 currentUser: widget.currentUser,
-                                friendUser: friendsList[index])));
+                                friendUser: searchList[index])));
                   },
                   leading: InkWell(
                     child: CircleAvatar(
                       radius: 30,
                       backgroundImage:
-                          NetworkImage(friendsList[index]['photoURL']),
+                          NetworkImage(searchList[index]['photoURL']),
                     ),
                   ),
                   title: Text(searchList[index]['name'],
@@ -112,7 +112,7 @@ class _FriendsListState extends State<FriendsList> {
                   size: 200,
                 ),
                 Text(
-                  'No Result Found',
+                  'No Friend Found',
                   style: TextStyle(color: backgroundColor1, fontSize: 20),
                 )
               ],
@@ -186,6 +186,7 @@ class _FriendsListState extends State<FriendsList> {
                               _searchController.clear();
                               setState(() {
                                 searchList = friendsList;
+                                searchList.sort((a, b) => a['name'].compareTo(b['name']));
                               });
                             },
                           )
