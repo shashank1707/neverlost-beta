@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
+import 'package:neverlost_beta/Firebase/encryption.dart';
 class CreateNewGroup extends StatefulWidget {
   final Map<String, dynamic> user;
   const CreateNewGroup({required this.user, Key? key}) : super(key: key);
@@ -60,7 +61,7 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
     String groupName = _nameController.text.toUpperCase().trim();
     Map<String, dynamic> groupInfo = {
       'name': groupName,
-      'lastMessage': 'Created a group',
+      'lastMessage': Encryption().encrypt('Created a group').base64,
       'users': addedPeopleList,
       'admin': widget.user['uid'],
       'timestamp': DateTime.now(),

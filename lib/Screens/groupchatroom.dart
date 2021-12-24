@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
+import 'package:neverlost_beta/Firebase/encryption.dart';
 
 class GroupChatRoomBar extends StatefulWidget {
   final Map<String, dynamic> user, groupInfo;
@@ -115,14 +116,14 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     _messageController.text = _messageController.text.trim();
 
     Map<String, dynamic> lastMessageInfo = {
-      'lastMessage': _messageController.text,
+      'lastMessage': Encryption().encrypt(_messageController.text).base64,
       'sender': widget.user['uid'],
       'senderName': widget.user['name'],
       'timestamp': DateTime.now(),
     };
 
     Map<String, dynamic> messageInfo = {
-      'message': _messageController.text,
+      'message': Encryption().encrypt(_messageController.text).base64,
       'sender': widget.user['uid'],
       'senderName': widget.user['name'],
       'seenBy': [],
@@ -205,7 +206,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: SelectableText(
-                                ds['message'],
+                                Encryption().decrypt(ds['message']),
                                 style: TextStyle(
                                     fontSize: 16,
                                     color: sendbyMe

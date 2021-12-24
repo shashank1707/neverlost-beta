@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
+import 'package:neverlost_beta/Firebase/encryption.dart';
 import 'package:neverlost_beta/Screens/groupchatroom.dart';
 import 'package:neverlost_beta/Screens/newgroup.dart';
 
@@ -129,7 +130,7 @@ class _GroupChatListState extends State<GroupChatList> {
                                 maxLines: 1,
                       ),
                       subtitle: Text(
-                        "${groupInfo['senderName']}: ${groupInfo['lastMessage']}",
+                        "${groupInfo['senderName']}: ${Encryption().decrypt(groupInfo['lastMessage'])}",
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
