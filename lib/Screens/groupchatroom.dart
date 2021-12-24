@@ -116,14 +116,14 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     _messageController.text = _messageController.text.trim();
 
     Map<String, dynamic> lastMessageInfo = {
-      'lastMessage': Encryption().encrypt(_messageController.text).base64,
+      'lastMessage': Encryption().encrypt(_messageController.text),
       'sender': widget.user['uid'],
       'senderName': widget.user['name'],
       'timestamp': DateTime.now(),
     };
 
     Map<String, dynamic> messageInfo = {
-      'message': Encryption().encrypt(_messageController.text).base64,
+      'message': Encryption().encrypt(_messageController.text),
       'sender': widget.user['uid'],
       'senderName': widget.user['name'],
       'seenBy': [],

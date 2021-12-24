@@ -4,11 +4,10 @@ class Encryption {
   final key = Key.fromLength(32);
   final iv = IV.fromLength(16);
 
-  Encrypted encrypt(plainText){
+  encrypt(plainText){
     final encrypter = Encrypter(AES(key));
     final encrypted = encrypter.encrypt(plainText, iv: iv);
-    print(encrypted.base64);
-    return encrypted;
+    return encrypted.base64;
   }
 
   decrypt(encryptedText){
