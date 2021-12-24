@@ -58,6 +58,9 @@ class _SearchState extends State<Search> {
                 itemCount: snapshot.data.docs.length,
                 itemBuilder: (context, index) {
                   var searchedUser = snapshot.data.docs[index];
+                  if(searchedUser['uid'] == widget.currentUser['uid']){
+                    return const SizedBox();
+                  }
                   return Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -137,7 +140,14 @@ class _SearchState extends State<Search> {
                                       softWrap: true,
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,),
-                        trailing: Icon(Icons.chevron_right_rounded),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () async {
+                            var currentUser = widget.currentUser;
+                            currentUser['recentSearchList'].remove(searchedUser['uid']);
+                            await DatabaseMethods().updateUserDatabase(currentUser);
+                          },
+                        ),
                       ),
                     )
                   : const Text('');

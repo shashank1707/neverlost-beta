@@ -11,15 +11,13 @@ import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
-import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/chat_list.dart';
 import 'package:neverlost_beta/Screens/friendrequests.dart';
-import 'package:neverlost_beta/Screens/groupchats.dart';
+import 'package:neverlost_beta/Screens/groupchat_list.dart';
 import 'package:neverlost_beta/Screens/notifications.dart';
 import 'package:neverlost_beta/Screens/profile.dart';
 import 'package:neverlost_beta/Screens/search.dart';
 import 'package:neverlost_beta/Screens/setting.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:io';
 
 class Home extends StatefulWidget {
@@ -62,96 +60,84 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   Widget notificationBadge() {
-    return StreamBuilder(
-      stream: DatabaseMethods().getUserSnapshots(currentUser['uid']),
-      builder: (context, AsyncSnapshot snapshot) {
-        return snapshot.hasData &&
-                snapshot.data['notifications'].where((notification) {
-                      return notification['seen'] == false;
-                    }).length >
-                    0
-            ? Badge(
-                position: BadgePosition.topEnd(top: 5, end: 5),
-                badgeContent: Text(
-                  '${snapshot.data['notifications'].where((notification) {
-                    return notification['seen'] == false;
-                  }).length}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.notifications),
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => Notifications(
-                                  currentUser: currentUser,
-                                )));
-                  },
-                ),
-              )
-            : Badge(
-                position: BadgePosition.topEnd(top: 5, end: 5),
-                badgeContent: null,
-                showBadge: false,
-                child: IconButton(
-                  icon: const Icon(Icons.notifications),
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => Notifications(
-                                  currentUser: currentUser,
-                                )));
-                  },
-                ),
-              );
-      },
-    );
+    return currentUser['notifications'].where((notification) {
+              return notification['seen'] == false;
+            }).length >
+            0
+        ? Badge(
+            position: BadgePosition.topEnd(top: 5, end: 5),
+            badgeContent: Text(
+              '${currentUser['notifications'].where((notification) {
+                return notification['seen'] == false;
+              }).length}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => Notifications(
+                              currentUser: currentUser,
+                            )));
+              },
+            ),
+          )
+        : Badge(
+            position: BadgePosition.topEnd(top: 5, end: 5),
+            badgeContent: null,
+            showBadge: false,
+            child: IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => Notifications(
+                              currentUser: currentUser,
+                            )));
+              },
+            ),
+          );
   }
 
   Widget friendRequestBadge() {
-    return StreamBuilder(
-      stream: DatabaseMethods().getUserSnapshots(currentUser['uid']),
-      builder: (context, AsyncSnapshot snapshot) {
-        return snapshot.hasData &&
-                snapshot.data['pendingRequestList'].length > 0
-            ? Badge(
-                position: BadgePosition.topEnd(top: 5, end: 5),
-                badgeContent: Text(
-                  '${snapshot.data['pendingRequestList'].length}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.person_add_alt_rounded),
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => FriendRequests(
-                                  currentUser: currentUser,
-                                )));
-                  },
-                ),
-              )
-            : Badge(
-                position: BadgePosition.topEnd(top: 5, end: 5),
-                badgeContent: null,
-                showBadge: false,
-                child: IconButton(
-                  icon: const Icon(Icons.person_add_alt_rounded),
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => FriendRequests(
-                                  currentUser: currentUser,
-                                )));
-                  },
-                ),
-              );
-      },
-    );
+    return currentUser['pendingRequestList'].length > 0
+        ? Badge(
+            position: BadgePosition.topEnd(top: 5, end: 5),
+            badgeContent: Text(
+              '${currentUser['pendingRequestList'].length}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.person_add_alt_rounded),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => FriendRequests(
+                              currentUser: currentUser,
+                            )));
+              },
+            ),
+          )
+        : Badge(
+            position: BadgePosition.topEnd(top: 5, end: 5),
+            badgeContent: null,
+            showBadge: false,
+            child: IconButton(
+              icon: const Icon(Icons.person_add_alt_rounded),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => FriendRequests(
+                              currentUser: currentUser,
+                            )));
+              },
+            ),
+          );
   }
 
   void getlocation() async {
@@ -267,7 +253,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               controller: _tabController,
               children: [
                 ChatList(currentUser: currentUser),
-                Loading(),
+                GroupChatList(currentUser: currentUser),
                 Search(currentUser: currentUser),
                 Loading(),
               ],

@@ -5,15 +5,15 @@ import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Screens/groupchatroom.dart';
 import 'package:neverlost_beta/Screens/newgroup.dart';
 
-class GroupChats extends StatefulWidget {
-  final Map<String, dynamic> user;
-  const GroupChats({required this.user, Key? key}) : super(key: key);
+class GroupChatList extends StatefulWidget {
+  final Map<String, dynamic> currentUser;
+  const GroupChatList({required this.currentUser, Key? key}) : super(key: key);
 
   @override
-  _GroupChatsState createState() => _GroupChatsState();
+  _GroupChatListState createState() => _GroupChatListState();
 }
 
-class _GroupChatsState extends State<GroupChats> {
+class _GroupChatListState extends State<GroupChatList> {
 
   String claculateTime(_timestamp) {
     DateTime currentTime = DateTime.now();
@@ -96,7 +96,7 @@ class _GroupChatsState extends State<GroupChats> {
 
   Widget groupChatTiles(height, width) {
     return StreamBuilder(
-      stream: DatabaseMethods().findGroupChat(widget.user['uid']),
+      stream: DatabaseMethods().findGroupChat(widget.currentUser['uid']),
       builder: (context, AsyncSnapshot snapshot) {
         return snapshot.hasData && snapshot.data.docs.length > 0
             ? ListView.builder(
@@ -114,7 +114,7 @@ class _GroupChatsState extends State<GroupChats> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => GroupChatRoomBar(
-                                    user: widget.user, groupInfo: groupInfo)));
+                                    user: widget.currentUser, groupInfo: groupInfo)));
                       },
                       leading: const CircleAvatar(
                         radius: 28,
@@ -139,7 +139,7 @@ class _GroupChatsState extends State<GroupChats> {
                         // crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(claculateTime(groupInfo['timestamp'])),
-                          messageCount(groupInfo['id'], widget.user['uid'])
+                          messageCount(groupInfo['id'], widget.currentUser['uid'])
                         ],
                       ),
                     ),
@@ -171,7 +171,7 @@ class _GroupChatsState extends State<GroupChats> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => CreateNewGroup(user: widget.user)));
+                    builder: (context) => CreateNewGroup(user: widget.currentUser)));
           },
           backgroundColor: backgroundColor1,
           child: const Icon(

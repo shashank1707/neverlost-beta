@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart' as geo;
+import 'package:neverlost_beta/Components/constants.dart';
 
 class LocationMarker extends StatelessWidget {
   final user, address;
@@ -10,9 +11,14 @@ class LocationMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton(
       elevation: 5,
-      icon: ClipRRect(
-          borderRadius: BorderRadius.circular(100),
-          child: Image.network(user['photoURL'])),
+      icon: Container(
+        decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                  border: Border.all(width: 2, color: backgroundColor1)),
+        child: ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: Image.network(user['photoURL'])),
+      ),
       itemBuilder: (context) => <PopupMenuEntry>[
         PopupMenuItem(
           enabled: false,

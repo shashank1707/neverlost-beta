@@ -29,13 +29,13 @@ class _UserProfileState extends State<UserProfile> {
 
   void getCurrentUser() async {
     await DatabaseMethods()
-        .findUserWithUID(widget.currentUser['uid'])
-        .then((user) {
+        .getUserSnapshots(widget.currentUser['uid'])
+        .listen((user) {
       setState(() {
-        currentUser = user;
+        currentUser = user.data()!;
+        updateRecentSearchList();
       });
     });
-    updateRecentSearchList();
   }
 
   void updateRecentSearchList() async {
@@ -75,7 +75,6 @@ class _UserProfileState extends State<UserProfile> {
       await DatabaseMethods().acceptFriendRequest(currentUser['uid'],
           currentUser['name'], widget.friendUserUID);
     }
-    getCurrentUser();
   }
 
   void showPhoto(height, width, userProfile) {

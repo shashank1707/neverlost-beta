@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
-import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/home.dart';
 
 class Signin extends StatefulWidget {

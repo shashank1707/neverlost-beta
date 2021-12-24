@@ -3,13 +3,11 @@ import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/auth.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
-import 'package:neverlost_beta/Firebase/hive.dart';
 import 'package:neverlost_beta/Screens/signin.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 class Profile extends StatefulWidget {
   final Map<String, dynamic> currentUser;
@@ -44,12 +42,6 @@ class _ProfileState extends State<Profile> {
           isLoading = false;
         });
       });
-    // await DatabaseMethods().findUserWithUID(widget.currentUser['uid']).then((user) {
-    //     setState(() {
-    //       currentUser = user;
-    //       isLoading = false;
-    //     });
-    //   });
     
   }
 
@@ -385,24 +377,6 @@ class _ProfileState extends State<Profile> {
                           ],
                         ),
                       ));
-                      // showDialog(
-                      //     context: context,
-                      //     barrierDismissible: true,
-                      //     builder: (context) {
-                      //       return SimpleDialog(
-                      //           backgroundColor: Colors.transparent,
-                      //           children: [
-                      //             Container(
-                      //               width: width,
-                      //               height: width,
-                      //               decoration: BoxDecoration(
-                      //                   image: DecorationImage(
-                      //                       image: NetworkImage(
-                      //                           currentUser['photoURL']),
-                      //                       fit: BoxFit.fitWidth)),
-                      //             ),
-                      //           ]);
-                      //     });
                     },
                     child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -418,19 +392,7 @@ class _ProfileState extends State<Profile> {
                   ),                 
                   Stack(
                     alignment: Alignment.center,
-                    // alignment: WrapAlignment.center,
-                    // crossAxisAlignment: WrapCrossAlignment.center,
-                    // mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // IconButton(
-                      //   icon: const Icon(
-                      //     Icons.edit,
-                      //     color: Colors.transparent,
-                      //   ),
-                      //   onPressed: () {
-                          
-                      //   },
-                      // ),
                       Align(
                         alignment: Alignment.center,
                         child: SizedBox(

@@ -17,7 +17,10 @@ class _FriendsListState extends State<FriendsList> {
   late Stream userStream;
   bool isLoading = true;
   List friendsList = [];
+  List searchList = [];
   List listUID = [];
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -49,52 +52,87 @@ class _FriendsListState extends State<FriendsList> {
     for (int i = 0; i < listUID.length; i++) {
       await DatabaseMethods().findUserWithUID(listUID[i]).then((value) {
         friendsList.add(value);
+        searchList.add(value);
       });
     }
-    friendsList.sort((a, b) => a['name'].compareTo(b['name']));
+    searchList.sort((a, b) => a['name'].compareTo(b['name']));
     setState(() {
       isLoading = false;
     });
   }
 
-  Widget friendList(friendsList) {
-    return ListView.builder(
-        itemCount: friendsList.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: ListTile(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ChatRoom(
-                            currentUser: widget.currentUser,
-                            friendUser: friendsList[index])));
-              },
-              leading: InkWell(
-                child: CircleAvatar(
-                  radius: 30,
-                  backgroundImage: NetworkImage(friendsList[index]['photoURL']),
+  void searchFriend(text) {
+    setState(() {
+      searchList = friendsList
+          .where((element) =>
+              element['name'].toUpperCase().contains(text.toUpperCase()))
+          .toList();
+    });
+  }
+
+  Widget friendList(height, width) {
+    return searchList.isNotEmpty
+        ? ListView.builder(
+            itemCount: searchList.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: ListTile(
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ChatRoom(
+                                currentUser: widget.currentUser,
+                                friendUser: friendsList[index])));
+                  },
+                  leading: InkWell(
+                    child: CircleAvatar(
+                      radius: 30,
+                      backgroundImage:
+                          NetworkImage(friendsList[index]['photoURL']),
+                    ),
+                  ),
+                  title: Text(searchList[index]['name'],
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(searchList[index]['status'],
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              ),
-              title: Text(friendsList[index]['name'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(friendsList[index]['status'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              );
+            })
+        : SizedBox(
+            height: height,
+            width: width,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: const [
+                Icon(
+                  Icons.notes_rounded,
+                  color: Colors.grey,
+                  size: 200,
+                ),
+                Text(
+                  'No Result Found',
+                  style: TextStyle(color: backgroundColor1, fontSize: 20),
+                )
+              ],
             ),
           );
-        });
+    ;
   }
 
   @override
   Widget build(BuildContext context) {
+    var height = MediaQuery.of(context).size.height;
+    var width = MediaQuery.of(context).size.width;
     return Scaffold(
         appBar: AppBar(
           title: Text('Friends'),
           backgroundColor: backgroundColor1,
+          elevation: 0,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(15))),
           actions: [
-            IconButton(onPressed: () {}, icon: Icon(Icons.search)),
             PopupMenuButton(
                 itemBuilder: (context) => <PopupMenuEntry>[
                       PopupMenuItem(
@@ -110,6 +148,53 @@ class _FriendsListState extends State<FriendsList> {
                     ])
           ],
         ),
-        body: isLoading ? Loading() : friendList(friendsList));
+        body: isLoading
+            ? const Loading()
+            : SizedBox(
+                height: height,
+                width: width,
+                child: Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                          color: backgroundColor1.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10)),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              onChanged: (value) {
+                                searchFriend(value);
+                              },
+                              controller: _searchController,
+                              style: const TextStyle(color: textColor1),
+                              decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Search in Friend List',
+                                  hintStyle: TextStyle(color: textColor1)),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                                _searchController.text == ''
+                                    ? Icons.search
+                                    : Icons.close_rounded,
+                                color: textColor1),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                searchList = friendsList;
+                              });
+                            },
+                          )
+                        ],
+                      ),
+                    ),
+                    Expanded(child: friendList(height, width))
+                  ],
+                ),
+              ));
   }
 }

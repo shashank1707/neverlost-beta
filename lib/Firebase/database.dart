@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'hive.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:firebase_core/firebase_core.dart' as firebase_core;
@@ -72,7 +71,7 @@ class DatabaseMethods {
   Future<Stream<QuerySnapshot>> searchByName(name) async {
     return firestore
         .collection('users')
-        .where('name', isEqualTo: name.toUpperCase())
+        .where('name', isEqualTo: name)
         .snapshots();
   }
 
