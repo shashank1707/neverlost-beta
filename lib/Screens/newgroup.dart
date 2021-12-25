@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:firebase_core/firebase_core.dart' as firebase_core;
 import 'package:neverlost_beta/Firebase/encryption.dart';
 class CreateNewGroup extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -15,7 +21,8 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
   List addedPeopleList = [];
   List friendList = [];
   List searchList = [];
-
+  late File groupIcon ;
+  String groupIconPath = '';
   Map<String, dynamic> user = {};
 
   bool isLoading = true;
@@ -53,14 +60,14 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
   }
 
   void saveGroup() async {
-
-    if(!addedPeopleList.contains(widget.user['uid'])){
+    if (!addedPeopleList.contains(widget.user['uid'])) {
       addedPeopleList.add(widget.user['uid']);
     }
 
     String groupName = _nameController.text.toUpperCase().trim();
     Map<String, dynamic> groupInfo = {
       'name': groupName,
+      'photoURL': '',
       'lastMessage': Encryption().encrypt('Created a group'),
       'users': addedPeopleList,
       'admin': widget.user['uid'],
@@ -68,8 +75,10 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
       'sender': widget.user['uid'],
       'senderName': widget.user['name']
     };
-    if (groupName != '') {
-      DatabaseMethods().createGroup(groupInfo).then((_){
+    if (groupName != '' && groupIconPath != '') {
+      DatabaseMethods().createGroup(groupInfo).then((value) {
+        print(value);
+        //DatabaseMethods().updateGroupIcon(groupIconPath, value['uid']);
         Navigator.pop(context);
       });
     }
@@ -100,7 +109,8 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
             subtitle: Text(friendUser['email'],
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             trailing: addedPeopleList.contains(friendUser['uid'])
-                ? const Icon(Icons.radio_button_checked, color: backgroundColor1)
+                ? const Icon(Icons.radio_button_checked,
+                    color: backgroundColor1)
                 : const Icon(
                     Icons.radio_button_off,
                     color: Colors.grey,
@@ -114,11 +124,41 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
   void searchFriend(text) {
     setState(() {
       searchList = friendList
-          .where((element) => element['name'].toUpperCase().contains(text.toUpperCase()))
+          .where((element) =>
+              element['name'].toUpperCase().contains(text.toUpperCase()))
           .toList();
     });
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker _picker = ImagePicker();
+    // Pick an image
+    final XFile? image =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 20);
+    if(image!=null)
+    { 
+      String _imageFile = image.path;
+      File? croppedFile = await ImageCropper.cropImage(
+      cropStyle:CropStyle.circle
+        sourcePath: _imageFile,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        androidUiSettings: const AndroidUiSettings(
+            toolbarTitle: 'Set Group Icon',
+            toolbarColor: backgroundColor1,
+            toolbarWidgetColor: Colors.white,
+            lockAspectRatio: true),
+        iosUiSettings: const IOSUiSettings(
+          minimumAspectRatio: 1.0,
+        ));
+        if(croppedFile!=null){
+          setState(() {
+            groupIcon = croppedFile;
+            groupIconPath = croppedFile.path;
+          });
+        }
+    }
+    
+  }
   @override
   Widget build(BuildContext context) {
     var height = MediaQuery.of(context).size.height;
@@ -160,6 +200,25 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
               width: width,
               child: Column(
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(15, 8, 0, 0),
+                      child: InkWell(
+                        onTap: (){
+                          _pickImage();
+                        },
+                        child: groupIconPath==''? CircleAvatar(
+                          radius: 70,
+                          backgroundColor: backgroundColor1.withOpacity(0.1),
+                          child: Text("Choose pic",style: TextStyle(color: textColor1),),
+                        ) :CircleAvatar(
+                          radius: 70,
+                          backgroundImage: FileImage(groupIcon),
+                        ),
+                      ),
+                    ),
+                  ),
                   const Padding(
                     padding: EdgeInsets.only(left: 20, top: 20),
                     child: Align(

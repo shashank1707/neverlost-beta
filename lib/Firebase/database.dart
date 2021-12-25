@@ -95,10 +95,10 @@ class DatabaseMethods {
     return await firestore.collection('chatRooms').doc(chatRoomID).get();
   }
 
-  Future<void> unFriend(currentUserUid, currentUserName, targetUid) async {
+  Future<void> unFriend(currentgroupUID, currentUserName, targetUid) async {
     await firestore
         .collection('users')
-        .doc(currentUserUid)
+        .doc(currentgroupUID)
         .update({
           'friendList': FieldValue.arrayRemove([targetUid])
         })
@@ -109,7 +109,7 @@ class DatabaseMethods {
         .collection('users')
         .doc(targetUid)
         .update({
-          'friendList': FieldValue.arrayRemove([currentUserUid]),
+          'friendList': FieldValue.arrayRemove([currentgroupUID]),
           'notifications': FieldValue.arrayUnion([
             {
               'type': 'unfriend',
@@ -124,12 +124,12 @@ class DatabaseMethods {
             (error) => print("Failed to delete user's property: $error"));
   }
 
-  Future<void> sendFriendRequest(currentUserUID, targetUID) async {
+  Future<void> sendFriendRequest(currentgroupUID, targetUID) async {
     return await firestore
         .collection('users')
         .doc(targetUID)
         .update({
-          'pendingRequestList': FieldValue.arrayUnion([currentUserUID])
+          'pendingRequestList': FieldValue.arrayUnion([currentgroupUID])
         })
         .then((value) => print("User's Property Added"))
         .catchError(
@@ -142,13 +142,13 @@ class DatabaseMethods {
   }
 
   Future<void> acceptFriendRequest(
-      currentUserUID, currentUserName, targetUserUID) async {
-    await firestore.collection('users').doc(currentUserUID).update({
-      'pendingRequestList': FieldValue.arrayRemove([targetUserUID]),
-      'friendList': FieldValue.arrayUnion([targetUserUID])
+      currentgroupUID, currentUserName, targetgroupUID) async {
+    await firestore.collection('users').doc(currentgroupUID).update({
+      'pendingRequestList': FieldValue.arrayRemove([targetgroupUID]),
+      'friendList': FieldValue.arrayUnion([targetgroupUID])
     });
-    await firestore.collection('users').doc(targetUserUID).update({
-      'friendList': FieldValue.arrayUnion([currentUserUID]),
+    await firestore.collection('users').doc(targetgroupUID).update({
+      'friendList': FieldValue.arrayUnion([currentgroupUID]),
       'notifications': FieldValue.arrayUnion([
         {
           'type': 'accept',
@@ -161,12 +161,12 @@ class DatabaseMethods {
   }
 
   Future<void> rejectFriendRequest(
-      currentUserUid, currentUserName, targetUserUID) async {
-    await firestore.collection('users').doc(currentUserUid).update({
-      'pendingRequestList': FieldValue.arrayRemove([targetUserUID])
+      currentgroupUID, currentUserName, targetgroupUID) async {
+    await firestore.collection('users').doc(currentgroupUID).update({
+      'pendingRequestList': FieldValue.arrayRemove([targetgroupUID])
     });
 
-    await firestore.collection('users').doc(targetUserUID).update({
+    await firestore.collection('users').doc(targetgroupUID).update({
       'notifications': FieldValue.arrayUnion([
         {
           'type': 'reject',
@@ -280,14 +280,14 @@ class DatabaseMethods {
     return firestore.collection('users').doc(uid).update({'lastSeen': dt});
   }
 
-  changeProfilePhoto(filep, userUID) async {
+  changeProfilePhoto(filep, groupUID) async {
     final firebase_storage.FirebaseStorage _storage =
         firebase_storage.FirebaseStorage.instanceFor(
             bucket: 'gs://never-lost-643e9.appspot.com');
 
     File file = File(filep);
     try {
-      String filepath = 'profilePhoto/$userUID/$userUID.png';
+      String filepath = 'profilePhoto/$groupUID/$groupUID.png';
       await firebase_storage.FirebaseStorage.instance
           .ref(filepath)
           .delete()
@@ -303,7 +303,7 @@ class DatabaseMethods {
           .then((value) async {
         await firestore
             .collection('users')
-            .doc(userUID)
+            .doc(groupUID)
             .update({'photoURL': value});
       });
     } on firebase_core.FirebaseException catch (e) {
@@ -313,7 +313,7 @@ class DatabaseMethods {
   }
 
   createGroup(groupInfo) async {
-    await firestore.collection('groupChats').doc().set(groupInfo);
+    return await firestore.collection('groupChats').doc().set(groupInfo);
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> findGroupChat(uid) {
@@ -365,5 +365,33 @@ class DatabaseMethods {
         .collection('chats')
         .doc(messageID)
         .update(info);
+  }
+
+  updateGroupIcon(groupIconPath, groupUID) async {
+    File file = File(groupIconPath);
+    try {
+      String filepath = 'groupIcon/$groupUID/$groupUID.png';
+      await firebase_storage.FirebaseStorage.instance
+          .ref(filepath)
+          .delete()
+          .catchError((onerror) {
+        print('kya hi kr skte hai');
+      });
+      await firebase_storage.FirebaseStorage.instance
+          .ref(filepath)
+          .putFile(file);
+      await firebase_storage.FirebaseStorage.instance
+          .ref(filepath)
+          .getDownloadURL()
+          .then((value) async {
+        await firestore
+            .collection('groupChats')
+            .doc(groupUID)
+            .update({'photoURL': value});
+      });
+    } on firebase_core.FirebaseException catch (e) {
+      print(e);
+      return false;
+    }
   }
 }
