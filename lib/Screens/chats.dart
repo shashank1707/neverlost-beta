@@ -134,7 +134,29 @@ class _ChatsState extends State<Chats> {
                             Fluttertoast.showToast(msg: 'Copied to Clipboard');
                           },
                           onTap: () {
-                            if (isUrl) {
+                            if (ds['isImage'] == true ) {
+                              showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return InteractiveViewer(
+            child: SimpleDialog(
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                children: [
+                  Container(
+                    height: MediaQuery.of(context).size.height,
+                    width: MediaQuery.of(context).size.width,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                            image: NetworkImage(ds['message']),
+                            fit: BoxFit.fitWidth)),
+                  ),
+                ]),
+          );
+        });
+                            }
+                            else if (isUrl) {
                               _launchInBrowser(ds['message']);
                             }
                           },

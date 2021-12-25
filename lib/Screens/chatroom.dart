@@ -143,7 +143,7 @@ class _ChatRoomState extends State<ChatRoom>
                             width: 60,
                           )),
                     ),
-                    Text(widget.friendUser['name']),
+                    Flexible(child: Text(widget.friendUser['name'])),
                   ],
                 ),
               ),
@@ -213,7 +213,9 @@ class _ChatRoomState extends State<ChatRoom>
                             children: [
                               const Text(
                                 'Share your Location',
-                                style: TextStyle(color: backgroundColor2, fontWeight: FontWeight.w400),
+                                style: TextStyle(
+                                    color: backgroundColor2,
+                                    fontWeight: FontWeight.w400),
                               ),
                               Switch(
                                   value: isShare[index] && masterShare,

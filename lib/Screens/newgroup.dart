@@ -77,8 +77,7 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
     };
     if (groupName != '' && groupIconPath != '') {
       DatabaseMethods().createGroup(groupInfo).then((value) {
-        print(value);
-        //DatabaseMethods().updateGroupIcon(groupIconPath, value['uid']);
+        DatabaseMethods().updateGroupIcon(groupIconPath,value);
         Navigator.pop(context);
       });
     }
@@ -183,9 +182,9 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
                       style: TextStyle(color: backgroundColor2),
                     )),
                 TextButton(
-                    onPressed: () {
-                      saveGroup();
-                    },
+                    onPressed:
+                      (groupIconPath.isNotEmpty && _nameController.text.trim().isNotEmpty) ? ()=> saveGroup() : null
+                    ,
                     child: Text(
                       'Done',
                       style: TextStyle(

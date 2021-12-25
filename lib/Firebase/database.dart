@@ -313,7 +313,10 @@ class DatabaseMethods {
   }
 
   createGroup(groupInfo) async {
-    return await firestore.collection('groupChats').doc().set(groupInfo);
+    var group = firestore.collection('groupChats').doc();
+
+    await group.set(groupInfo);
+    return group.id;
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> findGroupChat(uid) {
