@@ -370,7 +370,7 @@ class DatabaseMethods {
         .update(info);
   }
 
-  updateGroupIcon(groupIconPath, groupUID) async {
+  Future<void> updateGroupIcon(groupIconPath, groupUID) async {
     File file = File(groupIconPath);
     try {
       String filepath = 'groupIcon/$groupUID/$groupUID.png';
@@ -394,7 +394,23 @@ class DatabaseMethods {
       });
     } on firebase_core.FirebaseException catch (e) {
       print(e);
-      return false;
     }
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> groupDetails(groupUID) {
+    return firestore.collection('groupChats').doc(groupUID).snapshots();
+  }
+
+  updateGroupLocSharePermission(groupUID, userUID, shareStatus) {
+    return firestore
+        .collection('groupChats')
+        .doc(groupUID)
+        .update({'locSharePermission.$userUID': !shareStatus});
+  }
+
+  updateLastLocation(groupUID, userUID, lat, long) {
+    return firestore.collection('groupChats').doc(groupUID).update({
+      'lastLocation.$userUID': [lat, long, DateTime.now()]
+    });
   }
 }

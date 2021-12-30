@@ -21,6 +21,8 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
   List addedPeopleList = [];
   List friendList = [];
   List searchList = [];
+  Map<String,bool> locSharePermission = {};
+  Map<String,List<dynamic>> lastLocation = {};
   late File groupIcon ;
   String groupIconPath = '';
   Map<String, dynamic> user = {};
@@ -62,6 +64,8 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
   void saveGroup() async {
     if (!addedPeopleList.contains(widget.user['uid'])) {
       addedPeopleList.add(widget.user['uid']);
+      locSharePermission.putIfAbsent(widget.user['uid'], () => false);
+      lastLocation.putIfAbsent(widget.user['uid'], () => [0,0,DateTime.now()]);
     }
 
     String groupName = _nameController.text.toUpperCase().trim();
@@ -70,12 +74,14 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
       'photoURL': '',
       'lastMessage': Encryption().encrypt('Created a group'),
       'users': addedPeopleList,
+      'locSharePermission' : locSharePermission,
+      'lastLocation':lastLocation,
       'admin': widget.user['uid'],
       'timestamp': DateTime.now(),
       'sender': widget.user['uid'],
       'senderName': widget.user['name']
     };
-    if (groupName != '' && groupIconPath != '') {
+    if (groupName != '' && groupIconPath != '' && addedPeopleList.length > 1) {
       DatabaseMethods().createGroup(groupInfo).then((value) {
         DatabaseMethods().updateGroupIcon(groupIconPath,value);
         Navigator.pop(context);
@@ -97,6 +103,8 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
                 addedPeopleList.remove(friendUser['uid']);
               } else {
                 addedPeopleList.add(friendUser['uid']);
+                locSharePermission.putIfAbsent(friendUser['uid'], () => false);
+                lastLocation.putIfAbsent(friendUser['uid'], () => [0,0,DateTime.now()]);
               }
               setState(() {});
             },

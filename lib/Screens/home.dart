@@ -255,7 +255,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 ChatList(currentUser: currentUser),
                 GroupChatList(currentUser: currentUser),
                 Search(currentUser: currentUser),
-                Loading(),
+                Setting(userUID: currentUser['uid']),
               ],
             ),
           );

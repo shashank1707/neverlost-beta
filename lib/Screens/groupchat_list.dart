@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
@@ -15,7 +14,6 @@ class GroupChatList extends StatefulWidget {
 }
 
 class _GroupChatListState extends State<GroupChatList> {
-
   String claculateTime(_timestamp) {
     DateTime currentTime = DateTime.now();
     var timestamp =
@@ -41,7 +39,7 @@ class _GroupChatListState extends State<GroupChatList> {
     var month = '${timestamp.month}'.length > 1
         ? '${timestamp.month}'
         : '0${timestamp.month}';
-    
+
     var year = '${timestamp.year}'.substring(2);
 
     if (yearDiff < 1 &&
@@ -60,7 +58,9 @@ class _GroupChatListState extends State<GroupChatList> {
       } else {
         return '$hour:$min AM';
       }
-    } else if ((yearDiff < 1 && monthDiff < 1 && dayDiff < 2) || (yearDiff < 1 && monthDiff <= 1 && dayDiff < 0) || (yearDiff == 1 && currentTime.day == 1 && currentTime.month == 1)) {
+    } else if ((yearDiff < 1 && monthDiff < 1 && dayDiff < 2) ||
+        (yearDiff < 1 && monthDiff <= 1 && dayDiff < 0) ||
+        (yearDiff == 1 && currentTime.day == 1 && currentTime.month == 1)) {
       return 'Yesterday';
     } else {
       return '$day/$month/$year';
@@ -80,7 +80,9 @@ class _GroupChatListState extends State<GroupChatList> {
                 child: Text(
                   '${snapshot.data.docs.length}',
                   style: const TextStyle(
-                      color: backgroundColor2, fontWeight: FontWeight.bold, fontSize: 10),
+                      color: backgroundColor2,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10),
                 ),
               )
             : Container(
@@ -93,6 +95,29 @@ class _GroupChatListState extends State<GroupChatList> {
               );
       },
     );
+  }
+
+  void showPhoto(height, width, photoURL) {
+    showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return InteractiveViewer(
+            child: SimpleDialog(
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                children: [
+                  Container(
+                    height: width,
+                    width: width,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                            image: NetworkImage(photoURL),
+                            fit: BoxFit.fitWidth)),
+                  ),
+                ]),
+          );
+        });
   }
 
   Widget groupChatTiles(height, width) {
@@ -115,19 +140,25 @@ class _GroupChatListState extends State<GroupChatList> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => GroupChatRoomBar(
-                                    user: widget.currentUser, groupInfo: groupInfo)));
+                                    user: widget.currentUser,
+                                    groupInfo: groupInfo)));
                       },
-                      leading: const CircleAvatar(
-                        radius: 28,
-                        child: Icon(Icons.people_alt_outlined, size: 28),
-                        backgroundColor: backgroundColor1,
+                      leading: GestureDetector(
+                        onTap: () {
+                          showPhoto(height, width, groupInfo['photoURL']);
+                        },
+                        child: ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: groupInfo['photoURL'] == ''
+                                ? Icon(Icons.group)
+                                : Image.network(groupInfo['photoURL'])),
                       ),
                       title: Text(
                         groupInfo['name'],
                         style: const TextStyle(fontWeight: FontWeight.bold),
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       subtitle: Text(
                         "${groupInfo['senderName']}: ${Encryption().decrypt(groupInfo['lastMessage'])}",
@@ -140,7 +171,8 @@ class _GroupChatListState extends State<GroupChatList> {
                         // crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(claculateTime(groupInfo['timestamp'])),
-                          messageCount(groupInfo['id'], widget.currentUser['uid'])
+                          messageCount(
+                              groupInfo['id'], widget.currentUser['uid'])
                         ],
                       ),
                     ),
@@ -148,16 +180,23 @@ class _GroupChatListState extends State<GroupChatList> {
                 },
               )
             : SizedBox(
-              height: height,
-              width: width,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: const [
-                  Icon(Icons.notes_rounded, color: Colors.grey, size: 200,),
-                  Text('No Group Chats', style: TextStyle(color: backgroundColor1, fontSize: 20),)
-                ],
-              ),
-            );
+                height: height,
+                width: width,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.notes_rounded,
+                      color: Colors.grey,
+                      size: 200,
+                    ),
+                    Text(
+                      'No Group Chats',
+                      style: TextStyle(color: backgroundColor1, fontSize: 20),
+                    )
+                  ],
+                ),
+              );
       },
     );
   }
@@ -172,7 +211,8 @@ class _GroupChatListState extends State<GroupChatList> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => CreateNewGroup(user: widget.currentUser)));
+                    builder: (context) =>
+                        CreateNewGroup(user: widget.currentUser)));
           },
           backgroundColor: backgroundColor1,
           child: const Icon(
