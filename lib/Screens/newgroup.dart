@@ -250,6 +250,7 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
                       },
                       controller: _nameController,
                       style: const TextStyle(color: textColor1),
+                      maxLength: 25,
                       decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: 'Group Name',

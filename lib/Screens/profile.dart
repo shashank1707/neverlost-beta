@@ -34,13 +34,15 @@ class _ProfileState extends State<Profile> {
 
   void getCurrentUser() async {
     DatabaseMethods().getUserSnapshots(widget.currentUser['uid']).listen((user) {
-        setState(() {
+        if (mounted) {
+          setState(() {
           currentUser = user.data()!;
           phoneController.text = currentUser['phone'];
           statusController.text = currentUser['status'];
           nameController.text = currentUser['name'];
           isLoading = false;
         });
+        }
       });
     
   }

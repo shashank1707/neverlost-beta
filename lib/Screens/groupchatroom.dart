@@ -11,6 +11,7 @@ import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/encryption.dart';
+import 'package:neverlost_beta/Screens/group_profile.dart';
 import 'package:neverlost_beta/Screens/uploader.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -88,7 +89,9 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
             borderRadius: BorderRadius.vertical(bottom: Radius.circular(15))),
         automaticallyImplyLeading: false,
         title: InkWell(
-          onTap: () {},
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>GroupProfile(groupUID: widget.groupInfo['id'],userUID: widget.user['uid'])));
+          },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
@@ -300,7 +303,6 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                 reverse: true,
                 itemBuilder: (context, index) {
                   Map<String, dynamic> ds = snapshot.data.docs[index].data();
-                  print(ds);
                   ds['id'] = snapshot.data.docs[index].id;
                   bool sendbyMe = ds['sender'] == widget.user['uid'];
                   if (!sendbyMe) {
@@ -344,16 +346,17 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              ds['senderName'],
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 12,
-                                  color: sendbyMe
-                                      ? backgroundColor2.withOpacity(0.7)
-                                      : backgroundColor1.withOpacity(0.7)),
-                            ),
+                            if(!sendbyMe) 
+                              Text(
+                                ds['senderName'],
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 12,
+                                    color: sendbyMe
+                                        ? backgroundColor2.withOpacity(0.7)
+                                        : backgroundColor1.withOpacity(0.7)),
+                              ),
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: SelectableText(
