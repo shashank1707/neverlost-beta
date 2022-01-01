@@ -11,6 +11,7 @@ import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/encryption.dart';
+import 'package:neverlost_beta/Screens/group_location.dart';
 import 'package:neverlost_beta/Screens/group_profile.dart';
 import 'package:neverlost_beta/Screens/uploader.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -187,7 +188,7 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
         controller: _tabController,
         children: [
           GroupChatRoom(user: widget.user, groupInfo: widget.groupInfo),
-          Loading()
+          GroupLocation(groupUID: widget.groupInfo['id'], userUID: widget.user['uid'])
         ],
       ),
     );
