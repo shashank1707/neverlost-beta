@@ -24,10 +24,18 @@ class _GroupLocationState extends State<GroupLocation> {
   Map lastLocation = {};
   Map locSharPermission = {};
   Map currentStatus = {};
+  List<Marker> membersmarker = [];
+  late Timer timer;
   @override
   void initState() {
     getGroupInfo().then((value) => getLocation());
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    timer.cancel();
+    super.dispose();
   }
 
   Future<void> getGroupInfo() async {
@@ -36,7 +44,7 @@ class _GroupLocationState extends State<GroupLocation> {
         setState(() {
           lastLocation = event.data()!['lastLocation'];
           locSharPermission = event.data()!['locSharePermission'];
-          currentStatus = locSharPermission;
+          currentStatus = lastLocation;
         });
       }
     });
@@ -44,7 +52,7 @@ class _GroupLocationState extends State<GroupLocation> {
 
   getLocation() {
     if (mounted) {
-      Timer.periodic(Duration(seconds: 5), (timer) {
+      timer = Timer.periodic(Duration(seconds: 5), (_) {
         for (var uid in locSharPermission.keys) {
           if (locSharPermission[uid] == true) {
             DatabaseMethods().getUserData(uid).then((value) {
@@ -68,66 +76,76 @@ class _GroupLocationState extends State<GroupLocation> {
             }
           }
         }
-        print(currentStatus);
+        setMarker();
       });
     }
   }
-  // locationMap() {
-  //   if (mounted) {
-  //     return Scaffold(
-  //       body: FlutterMap(
-  //         options: MapOptions(
-  //           interactiveFlags: InteractiveFlag.all,
-  //           center: LatLng(friendlat, friendlong),
-  //           zoom: zoom,
-  //         ),
-  //         layers: [
-  //           MarkerLayerOptions(
-  //             markers: [
-  //               Marker(
-  //                 height: 40,
-  //                 width: 40,
-  //                 point: LatLng(userlat, userlong),
-  //                 builder: (ctx) => LocationMarker(
-  //                   user: widget.currentUser,
-  //                   address: adddress,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ],
-  //         children: <Widget>[
-  //           TileLayerWidget(
-  //               options: TileLayerOptions(
-  //                   urlTemplate:
-  //                       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  //                   subdomains: ['a', 'b', 'c'])),
-  //           MarkerLayerWidget(
-  //               options: MarkerLayerOptions(
-  //             markers: [
-  //               Marker(
-  //                 height: 40,
-  //                 width: 40,
-  //                 point: LatLng(friendlat, friendlong),
-  //                 builder: (ctx) => LocationMarker(
-  //                     user: widget.friendUser, address: friendAdddress),
-  //               ),
-  //             ],
-  //           )),
-  //         ],
-  //       ),
-  //       floatingActionButton: FloatingActionButton(
-  //         onPressed: () {
-  //           _getAddress(userlat, userlong);
-  //         },
-  //         child: const Icon(CupertinoIcons.restart),
-  //       ),
-  //     );
-  //   }
-  // }
+
+  setMarker() {
+    List<Marker> temp = [];
+    currentStatus.forEach((key, value) {
+      temp.add(Marker(
+        height: 40,
+        width: 40,
+        point: LatLng(24.73, 85.03),
+        builder: (ctx) => LocationMarker(
+          user: widget.key,
+          address: 'adddress',
+        ),
+      ));
+    });
+    setState(() {
+      membersmarker = temp;
+      isLoading = false;
+    });
+  }
+
+  locationMap() {
+    if (mounted) {
+      return Scaffold(
+        body: FlutterMap(
+          options: MapOptions(
+            interactiveFlags: InteractiveFlag.all,
+            center: LatLng(currentStatus.values.toList()[0][0],
+                currentStatus.values.toList()[0][1]),
+            zoom: 15,
+          ),
+          layers: [
+            MarkerLayerOptions(
+              markers: [
+                Marker(
+                  height: 40,
+                  width: 40,
+                  point: LatLng(currentStatus.values.toList()[0][0],
+                      currentStatus.values.toList()[0][1]),
+                  builder: (ctx) => LocationMarker(
+                    user: widget.userUID,
+                    address: 'adddress',
+                  ),
+                ),
+              ],
+            ),
+          ],
+          children: <Widget>[
+            TileLayerWidget(
+                options: TileLayerOptions(
+                    urlTemplate:
+                        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    subdomains: ['a', 'b', 'c'])),
+            MarkerLayerWidget(
+                options: MarkerLayerOptions(markers: membersmarker)),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {},
+          child: const Icon(CupertinoIcons.restart),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return isLoading ? Loading() : locationMap();
   }
 }

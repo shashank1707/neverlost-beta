@@ -13,11 +13,11 @@ class LocationMarker extends StatelessWidget {
       elevation: 5,
       icon: Container(
         decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                  border: Border.all(width: 2, color: backgroundColor1)),
+            shape: BoxShape.circle,
+            border: Border.all(width: 2, color: backgroundColor1)),
         child: ClipRRect(
             borderRadius: BorderRadius.circular(100),
-            child: Image.network(user['photoURL'])),
+            child: Icon(Icons.person)),
       ),
       itemBuilder: (context) => <PopupMenuEntry>[
         PopupMenuItem(
