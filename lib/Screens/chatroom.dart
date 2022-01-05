@@ -10,7 +10,7 @@ import 'package:neverlost_beta/Screens/userprofile.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ChatRoom extends StatefulWidget {
-  final Map currentUser, friendUser;
+  final Map<String, dynamic> currentUser, friendUser;
   const ChatRoom(
       {Key? key, required this.currentUser, required this.friendUser})
       : super(key: key);
@@ -30,6 +30,7 @@ class _ChatRoomState extends State<ChatRoom>
   bool shareLoading = true;
   late bool isShare = false;
   int index = 0;
+
   @override
   void initState() {
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
@@ -40,6 +41,11 @@ class _ChatRoomState extends State<ChatRoom>
       });
     });
   }
+
+  // @override
+  // void dispose(){
+  //   super.dispose();
+  // }
 
   Future createChatRoomID() async {
     List tempList = [
@@ -129,12 +135,10 @@ class _ChatRoomState extends State<ChatRoom>
               automaticallyImplyLeading: false,
               title: InkWell(
                 onTap: () {
-                  // Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(
-                  //         builder: (context) => UserProfile(
-                  //             currentUser: widget.currentUser,
-                  //             searchedUser: widget.friendUser)));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>UserProfile(currentUser: widget.currentUser, friendUserUID: widget.friendUser['uid'])));
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,

@@ -37,13 +37,16 @@ class _ProfileState extends State<Profile> {
         if (mounted) {
           setState(() {
           currentUser = user.data()!;
-          phoneController.text = currentUser['phone'];
-          statusController.text = currentUser['status'];
-          nameController.text = currentUser['name'];
           isLoading = false;
         });
         }
       });
+
+    setState(() {
+      phoneController.text = widget.currentUser['phone'];
+          statusController.text = widget.currentUser['status'];
+          nameController.text = widget.currentUser['name'];
+    });
     
   }
 

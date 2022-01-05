@@ -36,6 +36,12 @@ class _LocationPageState extends State<LocationPage> {
     getData().then((value) => getLocation());
   }
 
+  @override
+  void dispose(){
+    timer.cancel();
+    super.dispose();
+  }
+
   Future<void> getData() async {
     DatabaseMethods().chatRoomDetail(widget.chatRoomID).listen((event) {
       if (mounted) {
@@ -43,12 +49,13 @@ class _LocationPageState extends State<LocationPage> {
           lastLocation = event.data()!['lastLocation'];
           locSharePermission = event.data()!['locSharePermission'];
           print(lastLocation);
+          currentStatus = event.data()!['lastLocation'];
         });
       }
     });
-    setState(() {
-      currentStatus = lastLocation;
-    });
+    // setState(() {
+    //   currentStatus = lastLocation;
+    // });
   }
 
   getLocation() {
@@ -76,9 +83,9 @@ class _LocationPageState extends State<LocationPage> {
           }
         }
       }
-    });
-    setState(() {
-      isLoading = false;
+      setState(() {
+        isLoading = false;
+      });
     });
   }
   // Future<String> _getAddress(double lat, double long) async {
@@ -154,6 +161,6 @@ class _LocationPageState extends State<LocationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoading ? const Loading() : Loading();
+    return isLoading ? const Loading() : locationMap();
   }
 }
