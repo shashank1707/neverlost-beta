@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -9,11 +11,11 @@ import 'package:neverlost_beta/Components/marker.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
 
 class LocationPage extends StatefulWidget {
-  final currentUser, friendUser, chatRoomID;
+  final String currentUID, friendUID, chatRoomID;
   const LocationPage(
       {Key? key,
-      required this.currentUser,
-      required this.friendUser,
+      required this.currentUID,
+      required this.friendUID,
       required this.chatRoomID})
       : super(key: key);
 
@@ -22,159 +24,136 @@ class LocationPage extends StatefulWidget {
 }
 
 class _LocationPageState extends State<LocationPage> {
-  bool isloading = true;
-  late double userlat;
-  late double userlong;
-  late double friendlat;
-  late double friendlong;
+  bool isLoading = true;
+  Map lastLocation = {};
+  Map locSharePermission = {};
+  Map currentStatus = {};
   double zoom = 15;
-  late Stream userStream, friendStream;
-  String adddress = '';
-  String friendAdddress = '';
-  bool friendMasterShare = false;
-  bool userMasterShare = false;
-  bool friendIsShare = false;
-  bool userIsShare = false;
+  late Timer timer;
   @override
   void initState() {
     super.initState();
-    if (mounted) {
-      getUserStream();
-    }
+    getData().then((value) => getLocation());
   }
 
-  void getUserStream() async {
-    if (mounted) {
-      DatabaseMethods()
-          .getUserSnapshots(widget.friendUser['uid'])
-          .listen((event) async {
+  Future<void> getData() async {
+    DatabaseMethods().chatRoomDetail(widget.chatRoomID).listen((event) {
+      if (mounted) {
         setState(() {
-          friendlat = event.data()!['latitude'];
-          friendlong = event.data()!['longitude'];
-          // friendAdddress = _getAddress(friendlat, friendlong) as String;
-          friendMasterShare = event.data()!['locShare'];
+          lastLocation = event.data()!['lastLocation'];
+          locSharePermission = event.data()!['locSharePermission'];
+          print(lastLocation);
         });
-      });
-      DatabaseMethods()
-          .getUserSnapshots(widget.currentUser['uid'])
-          .listen((event) async {
-        setState(() {
-          userMasterShare = event.data()!['locShare'];
-          userlat = event.data()!['latitude'];
-          userlong = event.data()!['longitude'];
-          // adddress = _getAddress(userlat, userlong) as String;
-          // print(adddress);
-        });
-      });
+      }
+    });
+    setState(() {
+      currentStatus = lastLocation;
+    });
+  }
 
-      DatabaseMethods().chatRoomDetail(widget.chatRoomID).listen((event) {
-        if (event.data()!['users'][0] == widget.currentUser['email']) {
-          setState(() {
-            friendIsShare = event.data()!['isSharing'][1];
-            userIsShare = event.data()!['isSharing'][0];
+  getLocation() {
+    timer = Timer.periodic(Duration(seconds: 5), (_) {
+      for (var uid in locSharePermission.keys) {
+        if (locSharePermission[uid] == true) {
+          DatabaseMethods().getUserData(uid).then((value) {
+            if (mounted) {
+              setState(() {
+                currentStatus.update(
+                    uid,
+                    (v) => [
+                          value.data()!['latitude'],
+                          value.data()!['longitude']
+                        ]);
+              });
+            }
           });
         } else {
-          setState(() {
-            friendIsShare = event.data()!['isSharing'][0];
-            userIsShare = event.data()!['isSharing'][1];
-          });
+          if (mounted) {
+            setState(() {
+              currentStatus.update(
+                  uid, (value) => [lastLocation[uid][0], lastLocation[uid][1]]);
+            });
+          }
         }
-      });
-      setState(() {
-        isloading = false;
-      });
-    }
+      }
+    });
+    setState(() {
+      isLoading = false;
+    });
   }
-
-  Future<String> _getAddress(double lat, double long) async {
-    String address = '';
-    if (userMasterShare && friendMasterShare && friendIsShare && userIsShare) {
-      List<geo.Placemark> add = await geo.placemarkFromCoordinates(lat, long);
-      Map data = add[0].toJson();
-      address = data['name'] +
-          ',' +
-          data['locality'] +
-          ',' +
-          data['subAdministrativeArea'] +
-          ',' +
-          data['administrativeArea'] +
-          ',' +
-          data['postalCode'];
-    }
-    return address;
-  }
+  // Future<String> _getAddress(double lat, double long) async {
+  //   String address = '';
+  //   if (userMasterShare && friendMasterShare && friendIsShare && userIsShare) {
+  //     List<geo.Placemark> add = await geo.placemarkFromCoordinates(lat, long);
+  //     Map data = add[0].toJson();
+  //     address = data['name'] +
+  //         ',' +
+  //         data['locality'] +
+  //         ',' +
+  //         data['subAdministrativeArea'] +
+  //         ',' +
+  //         data['administrativeArea'] +
+  //         ',' +
+  //         data['postalCode'];
+  //   }
+  //   return address;
+  // }
 
   locationMap() {
-    if (mounted) {
-      return Scaffold(
-        body: FlutterMap(
-          options: MapOptions(
-            interactiveFlags: InteractiveFlag.all,
-            center: LatLng(friendlat, friendlong),
-            zoom: zoom,
+    return Scaffold(
+      body: FlutterMap(
+        options: MapOptions(
+          interactiveFlags: InteractiveFlag.all,
+          center: LatLng(currentStatus[widget.friendUID][0].toDouble(),
+              currentStatus[widget.friendUID][1].toDouble()),
+          zoom: zoom,
+        ),
+        layers: [
+          MarkerLayerOptions(
+            markers: [
+              Marker(
+                height: 40,
+                width: 40,
+                point: LatLng(currentStatus[widget.currentUID][0].toDouble(),
+                    currentStatus[widget.currentUID][0].toDouble()),
+                builder: (ctx) => LocationMarker(
+                  user: widget.currentUID,
+                  address: 'adddress',
+                ),
+              ),
+            ],
           ),
-          layers: [
-            MarkerLayerOptions(
-              markers: [
-                Marker(
-                  height: 40,
-                  width: 40,
-                  point: LatLng(userlat, userlong),
-                  builder: (ctx) => LocationMarker(
-                    user: widget.currentUser,
-                    address: adddress,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          children: <Widget>[
-            TileLayerWidget(
-                options: TileLayerOptions(
-                    urlTemplate:
-                        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                    subdomains: ['a', 'b', 'c'])),
-            MarkerLayerWidget(
-                options: MarkerLayerOptions(
-              markers: [
-                Marker(
-                  height: 40,
-                  width: 40,
-                  point: LatLng(friendlat, friendlong),
-                  builder: (ctx) => LocationMarker(
-                      user: widget.friendUser, address: friendAdddress),
-                ),
-              ],
-            )),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _getAddress(userlat, userlong);
-          },
-          child: const Icon(CupertinoIcons.restart),
-        ),
-      );
-    }
-  }
-
-  Widget requestShare() {
-    if (!userMasterShare || !userIsShare) {
-      return const Text('Turn on your Location Sharing from Settings');
-    }
-    if (!friendMasterShare || !friendIsShare) {
-      return const Text('Request Your Friend to turn on Location Sharing');
-    }
-    return const Text('');
+        ],
+        children: <Widget>[
+          TileLayerWidget(
+              options: TileLayerOptions(
+                  urlTemplate:
+                      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                  subdomains: ['a', 'b', 'c'])),
+          MarkerLayerWidget(
+              options: MarkerLayerOptions(
+            markers: [
+              Marker(
+                height: 40,
+                width: 40,
+                point: LatLng(currentStatus[widget.friendUID][0].toDouble(),
+                    currentStatus[widget.friendUID][1].toDouble()),
+                builder: (ctx) => LocationMarker(
+                    user: widget.friendUID, address: 'friendAdddress'),
+              ),
+            ],
+          )),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(CupertinoIcons.restart),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return (userMasterShare &&
-            friendMasterShare &&
-            friendIsShare &&
-            userIsShare)
-        ? (isloading ? const Loading() : locationMap())
-        : Center(child: requestShare());
+    return isLoading ? const Loading() : Loading();
   }
 }

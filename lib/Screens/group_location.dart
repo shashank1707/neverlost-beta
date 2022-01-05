@@ -44,7 +44,7 @@ class _GroupLocationState extends State<GroupLocation> {
         setState(() {
           lastLocation = event.data()!['lastLocation'];
           locSharPermission = event.data()!['locSharePermission'];
-          currentStatus = lastLocation;
+          currentStatus = event.data()!['lastLocation'];
         });
       }
     });
@@ -81,16 +81,70 @@ class _GroupLocationState extends State<GroupLocation> {
     }
   }
 
+  String claculateTime(_timestamp) {
+    DateTime currentTime = DateTime.now();
+    var timestamp =
+        DateTime.fromMicrosecondsSinceEpoch(_timestamp.microsecondsSinceEpoch);
+    var yearDiff = currentTime.year - timestamp.year;
+    var monthDiff = currentTime.month - timestamp.month;
+    var dayDiff = currentTime.day - timestamp.day;
+    var hourDiff = currentTime.hour - timestamp.hour;
+    var minDiff = currentTime.minute - timestamp.minute;
+
+    var min = '${timestamp.minute}'.length > 1
+        ? '${timestamp.minute}'
+        : '0${timestamp.minute}';
+
+    var hour = '${timestamp.hour}'.length > 1
+        ? '${timestamp.hour}'
+        : '0${timestamp.hour}';
+
+    var day = '${timestamp.day}'.length > 1
+        ? '${timestamp.day}'
+        : '0${timestamp.day}';
+
+    var month = '${timestamp.month}'.length > 1
+        ? '${timestamp.month}'
+        : '0${timestamp.month}';
+
+    var year = '${timestamp.year}'.substring(2);
+
+    if (yearDiff < 1 &&
+        monthDiff < 1 &&
+        dayDiff < 1 &&
+        hourDiff < 1 &&
+        minDiff < 1) {
+      return 'Just Now';
+    } else if (yearDiff < 1 && monthDiff < 1 && dayDiff < 1) {
+      if (int.parse(hour) == 0) {
+        return '12:$min AM';
+      } else if (int.parse(hour) == 12) {
+        return '12:$min PM';
+      } else if (int.parse(hour) > 12) {
+        return '${int.parse(hour) - 12}:$min PM';
+      } else {
+        return '$hour:$min AM';
+      }
+    } else if ((yearDiff < 1 && monthDiff < 1 && dayDiff < 2) ||
+        (yearDiff < 1 && monthDiff <= 1 && dayDiff < 0) ||
+        (yearDiff == 1 && currentTime.day == 1 && currentTime.month == 1)) {
+      return 'Yesterday';
+    } else {
+      return '$day/$month/$year';
+    }
+  }
+
   setMarker() {
+    // print(lastLocation);
     List<Marker> temp = [];
     currentStatus.forEach((key, value) {
       temp.add(Marker(
         height: 40,
         width: 40,
-        point: LatLng(24.73, 85.03),
+        point: LatLng(value[0].toDouble(), value[1].toDouble()),
         builder: (ctx) => LocationMarker(
           user: widget.key,
-          address: 'adddress',
+          address: claculateTime(lastLocation[key][2]),
         ),
       ));
     });
@@ -146,6 +200,6 @@ class _GroupLocationState extends State<GroupLocation> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoading ? Loading() : locationMap();
+    return isLoading ? const Loading() : locationMap();
   }
 }

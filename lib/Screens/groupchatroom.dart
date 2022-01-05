@@ -30,7 +30,6 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
   late TabController _tabController;
   bool shareLoading = true;
   bool isShare = false;
-  bool masterShare = false;
   @override
   void initState() {
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
@@ -39,13 +38,6 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
   }
 
   getGroupinfo() {
-    DatabaseMethods().getUserSnapshots(widget.user['uid']).listen((event) {
-      if (mounted) {
-        setState(() {
-          masterShare = event.data()!['locShare'];
-        });
-      }
-    });
     DatabaseMethods()
         .groupDetails(widget.groupInfo['id'])
         .listen((event) async {
@@ -58,7 +50,6 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
   }
 
   changeSharePermission() {
-    if (masterShare) {
       DatabaseMethods().updateGroupLocSharePermission(
           widget.groupInfo['id'], widget.user['uid'], isShare);
       Fluttertoast.showToast(
@@ -67,15 +58,12 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
         DatabaseMethods().getUserData(widget.user['uid']).then((value){
           var lat = value.data()!['latitude'];
           var long = value.data()!['longitude'];
-          DatabaseMethods().updateLastLocation(widget.groupInfo['id'],widget.user['uid'], lat, long);
+          DatabaseMethods().updateGroupLastLocation(widget.groupInfo['id'],widget.user['uid'], lat, long);
         });
       }
       if (!isShare) {
         
       }
-    } else {
-      Fluttertoast.showToast(msg: 'Turn ON Location Sharing from Settings');
-    }
   }
 
   @override
@@ -172,7 +160,7 @@ class _GroupChatRoomBarState extends State<GroupChatRoomBar>
                               fontWeight: FontWeight.w400),
                         ),
                         Switch(
-                            value: isShare && masterShare,
+                            value: isShare ,
                             onChanged: (newvalue) {
                               changeSharePermission();
                             }),

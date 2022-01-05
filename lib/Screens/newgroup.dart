@@ -68,7 +68,7 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
       lastLocation.putIfAbsent(widget.user['uid'], () => [0,0,DateTime.now()]);
     }
 
-    String groupName = _nameController.text.toUpperCase().trim();
+    String groupName = _nameController.text.trim();
     Map<String, dynamic> groupInfo = {
       'name': groupName,
       'photoURL': '',
@@ -101,6 +101,8 @@ class _CreateNewGroupState extends State<CreateNewGroup> {
             onTap: () {
               if (addedPeopleList.contains(friendUser['uid'])) {
                 addedPeopleList.remove(friendUser['uid']);
+                locSharePermission.remove(friendUser['uid']);
+                lastLocation.remove(friendUser['uid']);
               } else {
                 addedPeopleList.add(friendUser['uid']);
                 locSharePermission.putIfAbsent(friendUser['uid'], () => false);

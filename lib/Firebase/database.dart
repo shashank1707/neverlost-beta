@@ -178,18 +178,7 @@ class DatabaseMethods {
     });
   }
 
-  createChatRoom(chatRoomID, user1, user2) async {
-    Map<String, dynamic> chatRoomInfo = {
-      'lastMessage': "Started a ChatRoom",
-      'sender': user1,
-      'receiver': user2,
-      'seen': false,
-      'timestamp': DateTime.now(),
-      'users': [user1, user2],
-      'isImage': false,
-      'isSharing': [false, false]
-    };
-
+  createChatRoom(chatRoomID, chatRoomInfo) async {
     await findChatRoom(chatRoomID).then((value) async {
       if (!value.exists) {
         await firestore
@@ -269,15 +258,17 @@ class DatabaseMethods {
         .update({'locShare': !mastershare});
   }
 
-  updatechatLocShare(chatRoomID, isShare) {
+  updatechatLocShare(chatRoomID, userUID, isShare) {
     return firestore
         .collection('chatRooms')
         .doc(chatRoomID)
-        .update({'isSharing': isShare});
+        .update({'locSharePermission.$userUID': !isShare});
   }
 
-  updatelastseen(DateTime dt, String uid) {
-    return firestore.collection('users').doc(uid).update({'lastSeen': dt});
+  updateChatlastLocation(chatRoomID, userUID, lat, long) {
+    return firestore.collection('chatRooms').doc(chatRoomID).update({
+      'lastLocation.$userUID': [lat, long, DateTime.now()]
+    });
   }
 
   changeProfilePhoto(filep, groupUID) async {
@@ -408,7 +399,7 @@ class DatabaseMethods {
         .update({'locSharePermission.$userUID': !shareStatus});
   }
 
-  updateLastLocation(groupUID, userUID, lat, long) {
+  updateGroupLastLocation(groupUID, userUID, lat, long) {
     return firestore.collection('groupChats').doc(groupUID).update({
       'lastLocation.$userUID': [lat, long, DateTime.now()]
     });

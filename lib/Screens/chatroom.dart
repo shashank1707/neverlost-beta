@@ -26,10 +26,9 @@ class _ChatRoomState extends State<ChatRoom>
   final messageController = TextEditingController();
   late Stream messageStream;
   late String chatRoomID;
-  late bool masterShare;
   bool isLoading = true;
   bool shareLoading = true;
-  late List isShare;
+  late bool isShare = false;
   int index = 0;
   @override
   void initState() {
@@ -63,45 +62,52 @@ class _ChatRoomState extends State<ChatRoom>
   }
 
   Future<void> createChatRoom() async {
-    await DatabaseMethods().createChatRoom(
-        chatRoomID, widget.currentUser['email'], widget.friendUser['email']);
+    Map lastLocation = {
+      widget.currentUser['uid']: [0, 0, DateTime.now()],
+      widget.friendUser['uid']: [0, 0, DateTime.now()]
+    };
+    Map locSharePermission = {
+      widget.currentUser['uid']: false,
+      widget.friendUser['uid']: false
+    };
+    Map<String, dynamic> chatRoomInfo = {
+      'lastMessage': "Started a ChatRoom",
+      'sender': widget.currentUser['email'],
+      'receiver': widget.friendUser['email'],
+      'lastLocation': lastLocation,
+      'locSharePermission': locSharePermission,
+      'seen': false,
+      'timestamp': DateTime.now(),
+      'users': [widget.currentUser['email'], widget.friendUser['email']],
+      'isImage': false,
+    };
+    await DatabaseMethods().createChatRoom(chatRoomID, chatRoomInfo);
     setState(() {
       isLoading = false;
     });
   }
 
   changeSharePermission() {
-    if (masterShare == true) {
-      DatabaseMethods().updatechatLocShare(chatRoomID,
-          index == 0 ? [!isShare[0], isShare[1]] : [isShare[0], !isShare[1]]);
-      Fluttertoast.showToast(
-          msg: isShare[index] ? 'Location Sharing OFF' : 'Location Sharing ON');
-    } else {
-      Fluttertoast.showToast(msg: 'Turn ON Location Sharing from Settings');
+    DatabaseMethods()
+        .updatechatLocShare(chatRoomID, widget.currentUser['uid'], isShare);
+    Fluttertoast.showToast(
+        msg: isShare ? 'Location Sharing OFF' : 'Location Sharing ON');
+    if (isShare) {
+      DatabaseMethods().getUserData(widget.currentUser['uid']).then((value) {
+        var lat = value.data()!['latitude'];
+        var long = value.data()!['longitude'];
+        DatabaseMethods().updateChatlastLocation(
+            chatRoomID, widget.currentUser['uid'], lat, long);
+      });
     }
   }
 
   getUserStream() {
-    DatabaseMethods()
-        .getUserSnapshots(widget.currentUser['uid'])
-        .listen((event) {
-      if (mounted) {
-        setState(() {
-          masterShare = event.data()!['locShare'];
-        });
-      }
-    });
     DatabaseMethods().chatRoomDetail(chatRoomID).listen((event) async {
-      isShare = await event.data()!['isSharing'];
-      shareLoading = false;
-      if (event.data()!['users'][0] == widget.currentUser['email']) {
-        index = 0;
-      } else {
-        index = 1;
-      }
-      if (mounted) {
-        setState(() {});
-      }
+      setState(() {
+        isShare =
+            event.data()!['locSharePermission'][widget.currentUser['uid']];
+      });
     });
   }
 
@@ -204,27 +210,26 @@ class _ChatRoomState extends State<ChatRoom>
                           ],
                         ),
                       ),
-                      if (!shareLoading)
-                        InkWell(
-                          onTap: () {
-                            changeSharePermission();
-                          },
-                          child: Row(
-                            children: [
-                              const Text(
-                                'Share your Location',
-                                style: TextStyle(
-                                    color: backgroundColor2,
-                                    fontWeight: FontWeight.w400),
-                              ),
-                              Switch(
-                                  value: isShare[index] && masterShare,
-                                  onChanged: (newvalue) {
-                                    changeSharePermission();
-                                  }),
-                            ],
-                          ),
-                        )
+                      InkWell(
+                        onTap: () {
+                          changeSharePermission();
+                        },
+                        child: Row(
+                          children: [
+                            const Text(
+                              'Share your Location',
+                              style: TextStyle(
+                                  color: backgroundColor2,
+                                  fontWeight: FontWeight.w400),
+                            ),
+                            Switch(
+                                value: isShare,
+                                onChanged: (newvalue) {
+                                  changeSharePermission();
+                                }),
+                          ],
+                        ),
+                      )
                     ],
                   ),
                 ),
@@ -239,8 +244,8 @@ class _ChatRoomState extends State<ChatRoom>
                   chatRoomID: chatRoomID,
                 ),
                 LocationPage(
-                  currentUser: widget.currentUser,
-                  friendUser: widget.friendUser,
+                  currentUID: widget.currentUser['uid'],
+                  friendUID: widget.friendUser['uid'],
                   chatRoomID: chatRoomID,
                 )
               ],
