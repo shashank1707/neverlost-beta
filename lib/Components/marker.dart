@@ -30,7 +30,7 @@ class LocationMarker extends StatelessWidget {
                 height: 35,
                 child: ClipRRect(
                     borderRadius: BorderRadius.circular(100),
-                    child: Image.network(user['photoURL'])),
+                    child: Icon(Icons.fast_forward)),
               ),
               title: Text(
                 address,
