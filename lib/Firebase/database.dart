@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:firebase_core/firebase_core.dart' as firebase_core;
+import 'package:neverlost_beta/Screens/chatroom.dart';
 
 class DatabaseMethods {
   final firestore = FirebaseFirestore.instance;
@@ -95,10 +96,24 @@ class DatabaseMethods {
     return await firestore.collection('chatRooms').doc(chatRoomID).get();
   }
 
-  Future<void> unFriend(currentgroupUID, currentUserName, targetUid) async {
+  Future<void> unFriend(currentUserUID, currentUserName, targetUid) async {
+    await firestore
+        .collection('chatRooms')
+        .where('users.$currentUserUID', isEqualTo: true)
+        .where('users.$targetUid', isEqualTo: true)
+        .get()
+        .then((value) {
+      if (value.docs.length == 1) {
+        firestore
+            .collection('chatRooms')
+            .doc(value.docs[0].id)
+            .update({'isFriend': false});
+      }
+    });
+
     await firestore
         .collection('users')
-        .doc(currentgroupUID)
+        .doc(currentUserUID)
         .update({
           'friendList': FieldValue.arrayRemove([targetUid])
         })
@@ -109,7 +124,7 @@ class DatabaseMethods {
         .collection('users')
         .doc(targetUid)
         .update({
-          'friendList': FieldValue.arrayRemove([currentgroupUID]),
+          'friendList': FieldValue.arrayRemove([currentUserUID]),
           'notifications': FieldValue.arrayUnion([
             {
               'type': 'unfriend',
@@ -124,12 +139,12 @@ class DatabaseMethods {
             (error) => print("Failed to delete user's property: $error"));
   }
 
-  Future<void> sendFriendRequest(currentgroupUID, targetUID) async {
+  Future<void> sendFriendRequest(currentUserUID, targetUID) async {
     return await firestore
         .collection('users')
         .doc(targetUID)
         .update({
-          'pendingRequestList': FieldValue.arrayUnion([currentgroupUID])
+          'pendingRequestList': FieldValue.arrayUnion([currentUserUID])
         })
         .then((value) => print("User's Property Added"))
         .catchError(
@@ -142,13 +157,26 @@ class DatabaseMethods {
   }
 
   Future<void> acceptFriendRequest(
-      currentgroupUID, currentUserName, targetgroupUID) async {
-    await firestore.collection('users').doc(currentgroupUID).update({
-      'pendingRequestList': FieldValue.arrayRemove([targetgroupUID]),
-      'friendList': FieldValue.arrayUnion([targetgroupUID])
+      currentUserUID, currentUserName, targetUID) async {
+    await firestore
+        .collection('chatRooms')
+        .where('users.$currentUserUID', isEqualTo: true)
+        .where('users.$targetUID', isEqualTo: true)
+        .get()
+        .then((value) {
+      if (value.docs.length == 1) {
+        firestore
+            .collection('chatRooms')
+            .doc(value.docs[0].id)
+            .update({'isFriend': true});
+      }
     });
-    await firestore.collection('users').doc(targetgroupUID).update({
-      'friendList': FieldValue.arrayUnion([currentgroupUID]),
+    await firestore.collection('users').doc(currentUserUID).update({
+      'pendingRequestList': FieldValue.arrayRemove([targetUID]),
+      'friendList': FieldValue.arrayUnion([targetUID])
+    });
+    await firestore.collection('users').doc(targetUID).update({
+      'friendList': FieldValue.arrayUnion([currentUserUID]),
       'notifications': FieldValue.arrayUnion([
         {
           'type': 'accept',
@@ -161,8 +189,8 @@ class DatabaseMethods {
   }
 
   Future<void> rejectFriendRequest(
-      currentgroupUID, currentUserName, targetgroupUID) async {
-    await firestore.collection('users').doc(currentgroupUID).update({
+      currentUserUID, currentUserName, targetgroupUID) async {
+    await firestore.collection('users').doc(currentUserUID).update({
       'pendingRequestList': FieldValue.arrayRemove([targetgroupUID])
     });
 
@@ -236,10 +264,10 @@ class DatabaseMethods {
         .update({'seen': true});
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getChats(email) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getChats(uid) {
     return firestore
         .collection('chatRooms')
-        .where('users', arrayContains: email)
+        .where('users.$uid', isEqualTo: true)
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
@@ -263,6 +291,13 @@ class DatabaseMethods {
         .collection('chatRooms')
         .doc(chatRoomID)
         .update({'locSharePermission.$userUID': !isShare});
+  }
+
+  blockUnblock(chatRoomID, userUID, isBlock) {
+    return firestore
+        .collection('chatRooms')
+        .doc(chatRoomID)
+        .update({'block.$userUID': !isBlock});
   }
 
   updateChatlastLocation(chatRoomID, userUID, lat, long) {
@@ -364,7 +399,7 @@ class DatabaseMethods {
   Future<void> updateGroupIcon(groupIconPath, groupUID) async {
     File file = File(groupIconPath);
     try {
-      String filepath = 'groupIcon/$groupUID/$groupUID.png';
+      String filepath = 'Groups/groupIcon/$groupUID/$groupUID.png';
       await firebase_storage.FirebaseStorage.instance
           .ref(filepath)
           .delete()
@@ -403,5 +438,12 @@ class DatabaseMethods {
     return firestore.collection('groupChats').doc(groupUID).update({
       'lastLocation.$userUID': [lat, long, DateTime.now()]
     });
+  }
+
+  updateGroupName(String groupUID, String newName) async {
+    await firestore
+        .collection('groupChats')
+        .doc(groupUID)
+        .update({'name': newName});
   }
 }

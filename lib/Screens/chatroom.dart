@@ -29,8 +29,12 @@ class _ChatRoomState extends State<ChatRoom>
   bool isLoading = true;
   bool shareLoading = true;
   late bool isShare = false;
+  late dynamic isBlock = {
+    widget.currentUser['uid']: false,
+    widget.friendUser['uid']: false
+  };
+  late bool isFriend = false;
   int index = 0;
-
   @override
   void initState() {
     _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
@@ -84,8 +88,16 @@ class _ChatRoomState extends State<ChatRoom>
       'locSharePermission': locSharePermission,
       'seen': false,
       'timestamp': DateTime.now(),
-      'users': [widget.currentUser['email'], widget.friendUser['email']],
+      'users': {
+        widget.currentUser['uid']: true,
+        widget.friendUser['uid']: true
+      },
       'isImage': false,
+      'isFriend': true,
+      'block': {
+        widget.currentUser['uid']: false,
+        widget.friendUser['uid']: false
+      }
     };
     await DatabaseMethods().createChatRoom(chatRoomID, chatRoomInfo);
     setState(() {
@@ -108,12 +120,25 @@ class _ChatRoomState extends State<ChatRoom>
     }
   }
 
+  blockUnblock() {
+    DatabaseMethods().blockUnblock(chatRoomID, widget.currentUser['uid'],
+        isBlock[widget.currentUser['uid']]);
+    Fluttertoast.showToast(
+        msg: isBlock[widget.currentUser['uid']]
+            ? 'You unblocked this contact'
+            : 'You blocked this contact');
+  }
+
   getUserStream() {
     DatabaseMethods().chatRoomDetail(chatRoomID).listen((event) async {
-      setState(() {
-        isShare =
-            event.data()!['locSharePermission'][widget.currentUser['uid']];
-      });
+      if (mounted) {
+        setState(() {
+          isShare =
+              event.data()!['locSharePermission'][widget.currentUser['uid']];
+          isBlock = event.data()!['block'];
+          isFriend = event.data()!['isFriend'];
+        });
+      }
     });
   }
 
@@ -138,7 +163,9 @@ class _ChatRoomState extends State<ChatRoom>
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>UserProfile(currentUser: widget.currentUser, friendUserUID: widget.friendUser['uid'])));
+                          builder: (context) => UserProfile(
+                              currentUser: widget.currentUser,
+                              friendUserUID: widget.friendUser['uid'])));
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -171,10 +198,19 @@ class _ChatRoomState extends State<ChatRoom>
                             onTap: () {},
                             child: const Text('Invite a friend'),
                           ),
-                          PopupMenuItem(
-                            onTap: () {},
-                            child: const Text('Refresh'),
-                          ),
+                          isBlock[widget.currentUser['uid']]!
+                              ? PopupMenuItem(
+                                  onTap: () {
+                                    blockUnblock();
+                                  },
+                                  child: const Text('Unblock'),
+                                )
+                              : PopupMenuItem(
+                                  onTap: () {
+                                    blockUnblock();
+                                  },
+                                  child: const Text('Block'),
+                                ),
                         ])
               ],
               bottom: PreferredSize(
@@ -214,26 +250,29 @@ class _ChatRoomState extends State<ChatRoom>
                           ],
                         ),
                       ),
-                      InkWell(
-                        onTap: () {
-                          changeSharePermission();
-                        },
-                        child: Row(
-                          children: [
-                            const Text(
-                              'Share your Location',
-                              style: TextStyle(
-                                  color: backgroundColor2,
-                                  fontWeight: FontWeight.w400),
-                            ),
-                            Switch(
-                                value: isShare,
-                                onChanged: (newvalue) {
-                                  changeSharePermission();
-                                }),
-                          ],
-                        ),
-                      )
+                      if (isFriend &&
+                          !isBlock[widget.currentUser['uid']]! &&
+                          !isBlock[widget.friendUser['uid']]!)
+                        InkWell(
+                          onTap: () {
+                            changeSharePermission();
+                          },
+                          child: Row(
+                            children: [
+                              const Text(
+                                'Share your Location',
+                                style: TextStyle(
+                                    color: backgroundColor2,
+                                    fontWeight: FontWeight.w400),
+                              ),
+                              Switch(
+                                  value: isShare,
+                                  onChanged: (newvalue) {
+                                    changeSharePermission();
+                                  }),
+                            ],
+                          ),
+                        )
                     ],
                   ),
                 ),
@@ -247,11 +286,15 @@ class _ChatRoomState extends State<ChatRoom>
                   friendUser: widget.friendUser,
                   chatRoomID: chatRoomID,
                 ),
-                LocationPage(
-                  currentUID: widget.currentUser['uid'],
-                  friendUID: widget.friendUser['uid'],
-                  chatRoomID: chatRoomID,
-                )
+                (isFriend &&
+                        !isBlock[widget.currentUser['uid']]! &&
+                        !isBlock[widget.friendUser['uid']]!)
+                    ? LocationPage(
+                        currentUID: widget.currentUser['uid'],
+                        friendUID: widget.friendUser['uid'],
+                        chatRoomID: chatRoomID,
+                      )
+                    : Loading()
               ],
             ),
           );

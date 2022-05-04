@@ -159,18 +159,21 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
     _locationData = await location.getLocation();
     location.onLocationChanged.listen((event) async {
-      setState(() {
-        lat = event.latitude!;
-        long = event.longitude!;
-      });
-      await DatabaseMethods().updateUserLocation(currentUser['uid'], lat, long);
+      if (currentUser['locShare']) {
+        setState(() {
+          lat = event.latitude!;
+          long = event.longitude!;
+        });
+        await DatabaseMethods()
+            .updateUserLocation(currentUser['uid'], lat, long);
+      }
     });
-    setState(() {
-      lat = _locationData.latitude!;
-      long = _locationData.longitude!;
-    });
+    // setState(() {
+    //   lat = _locationData.latitude!;
+    //   long = _locationData.longitude!;
+    // });
 
-    await DatabaseMethods().updateUserLocation(currentUser['uid'], lat, long);
+    // await DatabaseMethods().updateUserLocation(currentUser['uid'], lat, long);
   }
 
   @override

@@ -27,20 +27,21 @@ class _UserProfileState extends State<UserProfile> {
     super.initState();
   }
 
-  void getCurrentUser() async {
-    await DatabaseMethods()
+  void getCurrentUser() {
+    DatabaseMethods()
         .getUserSnapshots(widget.currentUser['uid'])
         .listen((user) {
-      setState(() {
-        currentUser = user.data()!;
-        updateRecentSearchList();
-      });
+      if (mounted) {
+        setState(() {
+          currentUser = user.data()!;
+          updateRecentSearchList();
+        });
+      }
     });
   }
 
   void updateRecentSearchList() async {
-    if (!currentUser['recentSearchList']
-        .contains(widget.friendUserUID)) {
+    if (!currentUser['recentSearchList'].contains(widget.friendUserUID)) {
       currentUser['recentSearchList'].add(widget.friendUserUID);
     }
 
@@ -53,11 +54,9 @@ class _UserProfileState extends State<UserProfile> {
   String getFriendStatus(userProfile) {
     if (userProfile['friendList'].contains(currentUser['uid'])) {
       return 'Unfriend';
-    } else if (userProfile['pendingRequestList']
-        .contains(currentUser['uid'])) {
+    } else if (userProfile['pendingRequestList'].contains(currentUser['uid'])) {
       return 'Request Sent';
-    } else if (currentUser['pendingRequestList']
-        .contains(userProfile['uid'])) {
+    } else if (currentUser['pendingRequestList'].contains(userProfile['uid'])) {
       return 'Accept Request';
     } else {
       return 'Add Friend';
@@ -69,11 +68,11 @@ class _UserProfileState extends State<UserProfile> {
       await DatabaseMethods()
           .sendFriendRequest(currentUser['uid'], widget.friendUserUID);
     } else if (getFriendStatus(userProfile) == 'Unfriend') {
-      await DatabaseMethods().unFriend(currentUser['uid'],
-          currentUser['name'], widget.friendUserUID);
+      await DatabaseMethods().unFriend(
+          currentUser['uid'], currentUser['name'], widget.friendUserUID);
     } else if (getFriendStatus(userProfile) == 'Accept Request') {
-      await DatabaseMethods().acceptFriendRequest(currentUser['uid'],
-          currentUser['name'], widget.friendUserUID);
+      await DatabaseMethods().acceptFriendRequest(
+          currentUser['uid'], currentUser['name'], widget.friendUserUID);
     }
   }
 
@@ -105,28 +104,28 @@ class _UserProfileState extends State<UserProfile> {
     var height = MediaQuery.of(context).size.height;
     var width = MediaQuery.of(context).size.width;
     return isLoading
-        ? Loading()
+        ? const Loading()
         : Scaffold(
             backgroundColor: backgroundColor2,
             appBar: AppBar(
               backgroundColor: backgroundColor1,
               elevation: 0,
-              title: Text('Profile'),
+              title: const Text('Profile'),
             ),
             body: StreamBuilder(
               stream: DatabaseMethods().getUserSnapshots(widget.friendUserUID),
               builder: (context, AsyncSnapshot snapshot) {
                 var userProfile = snapshot.hasData ? snapshot.data.data() : {};
                 return !snapshot.hasData
-                    ? Loading()
+                    ? const Loading()
                     : SizedBox(
                         height: height,
                         width: width,
                         child: Column(
                           children: [
                             Container(
-                              padding: EdgeInsets.only(bottom: 24),
-                              decoration: BoxDecoration(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              decoration: const BoxDecoration(
                                   color: backgroundColor1,
                                   borderRadius: BorderRadius.vertical(
                                       bottom: Radius.circular(15))),
@@ -169,7 +168,7 @@ class _UserProfileState extends State<UserProfile> {
                                             friendButton(userProfile);
                                           },
                                           child: Container(
-                                            padding: EdgeInsets.all(8),
+                                            padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
                                                 color: backgroundColor2,
                                                 border: Border.all(
@@ -179,15 +178,14 @@ class _UserProfileState extends State<UserProfile> {
                                                     BorderRadius.circular(100)),
                                             child: Text(
                                               getFriendStatus(userProfile),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                   color: backgroundColor1),
                                             ),
                                           ),
                                         ),
                                         Visibility(
                                           visible: userProfile['friendList']
-                                              .contains(
-                                                  currentUser['uid']),
+                                              .contains(currentUser['uid']),
                                           child: MaterialButton(
                                             onPressed: userProfile['friendList']
                                                     .contains(widget
@@ -206,7 +204,7 @@ class _UserProfileState extends State<UserProfile> {
                                                   }
                                                 : null,
                                             child: Container(
-                                              padding: EdgeInsets.all(8),
+                                              padding: const EdgeInsets.all(8),
                                               decoration: BoxDecoration(
                                                   border: Border.all(
                                                       color: backgroundColor2,
@@ -214,9 +212,9 @@ class _UserProfileState extends State<UserProfile> {
                                                   borderRadius:
                                                       BorderRadius.circular(
                                                           100)),
-                                              child: Text(
+                                              child: const Text(
                                                 'Message',
-                                                style: TextStyle(
+                                                style: const TextStyle(
                                                     color: backgroundColor2),
                                               ),
                                             ),

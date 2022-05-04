@@ -22,7 +22,7 @@ class GroupLocation extends StatefulWidget {
 class _GroupLocationState extends State<GroupLocation> {
   bool isLoading = true;
   Map lastLocation = {};
-  Map locSharPermission = {};
+  Map locSharePermission = {};
   Map currentStatus = {};
   List<Marker> membersmarker = [];
   late Timer timer;
@@ -43,8 +43,10 @@ class _GroupLocationState extends State<GroupLocation> {
       if (mounted) {
         setState(() {
           lastLocation = event.data()!['lastLocation'];
-          locSharPermission = event.data()!['locSharePermission'];
+          locSharePermission = event.data()!['locSharePermission'];
           currentStatus = event.data()!['lastLocation'];
+          //currentStatus.remove(key)
+          isLoading = false;
         });
       }
     });
@@ -52,9 +54,9 @@ class _GroupLocationState extends State<GroupLocation> {
 
   getLocation() {
     if (mounted) {
-      timer = Timer.periodic(Duration(seconds: 5), (_) {
-        for (var uid in locSharPermission.keys) {
-          if (locSharPermission[uid] == true) {
+      timer = Timer.periodic(const Duration(seconds: 5), (_) {
+        for (var uid in locSharePermission.keys) {
+          if (locSharePermission[uid] == true) {
             DatabaseMethods().getUserData(uid).then((value) {
               if (mounted) {
                 setState(() {
@@ -81,7 +83,7 @@ class _GroupLocationState extends State<GroupLocation> {
     }
   }
 
-  String claculateTime(_timestamp) {
+  String calculateTime(_timestamp) {
     DateTime currentTime = DateTime.now();
     var timestamp =
         DateTime.fromMicrosecondsSinceEpoch(_timestamp.microsecondsSinceEpoch);
@@ -144,7 +146,9 @@ class _GroupLocationState extends State<GroupLocation> {
         point: LatLng(value[0].toDouble(), value[1].toDouble()),
         builder: (ctx) => LocationMarker(
           user: widget.key,
-          address: claculateTime(lastLocation[key][2]),
+          address: locSharePermission[key]
+              ? 'Hello'
+              : calculateTime(lastLocation[key][2]),
         ),
       ));
     });
@@ -160,8 +164,8 @@ class _GroupLocationState extends State<GroupLocation> {
         body: FlutterMap(
           options: MapOptions(
             interactiveFlags: InteractiveFlag.all,
-            center: LatLng(currentStatus.values.toList()[0][0],
-                currentStatus.values.toList()[0][1]),
+            center: LatLng(currentStatus[widget.userUID][0].toDouble(),
+                currentStatus[widget.userUID][1].toDouble()),
             zoom: 15,
           ),
           layers: [
@@ -170,11 +174,13 @@ class _GroupLocationState extends State<GroupLocation> {
                 Marker(
                   height: 40,
                   width: 40,
-                  point: LatLng(currentStatus.values.toList()[0][0],
-                      currentStatus.values.toList()[0][1]),
+                  point: LatLng(currentStatus[widget.userUID][0].toDouble(),
+                      currentStatus[widget.userUID][1].toDouble()),
                   builder: (ctx) => LocationMarker(
                     user: widget.userUID,
-                    address: 'adddress',
+                    address: locSharePermission[widget.userUID]
+                        ? 'Hello'
+                        : calculateTime(lastLocation[widget.userUID][2]),
                   ),
                 ),
               ],

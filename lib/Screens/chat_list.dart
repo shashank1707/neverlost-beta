@@ -90,7 +90,7 @@ class _ChatListState extends State<ChatList> {
         (currentYear - targetYear == 1) &&
             (currentDay == 1) &&
             (currentMonth - targetMonth == -11)) {
-      return Text('Yesterday');
+      return const Text('Yesterday');
     }
 
     return Text('${targetDay}/${targetMonth}/${targetYear}');
@@ -102,19 +102,19 @@ class _ChatListState extends State<ChatList> {
       builder: (context, AsyncSnapshot snapshot) {
         return snapshot.hasData && snapshot.data.docs.length > 0
             ? Container(
-                margin: EdgeInsets.all(2),
-                padding: EdgeInsets.all(4),
-                decoration: BoxDecoration(
+                margin: const EdgeInsets.all(2),
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
                     color: backgroundColor1, shape: BoxShape.circle),
                 child: Text(
                   '${snapshot.data.docs.length}',
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: backgroundColor2, fontWeight: FontWeight.bold),
                 ),
               )
             : Container(
-                padding: EdgeInsets.all(4),
-                child: Text(
+                padding: const EdgeInsets.all(4),
+                child: const Text(
                   ' ',
                   style: TextStyle(
                       color: backgroundColor2, fontWeight: FontWeight.bold),
@@ -126,7 +126,7 @@ class _ChatListState extends State<ChatList> {
 
   Widget chatList(height, width) {
     return StreamBuilder(
-      stream: chatsStream,
+      stream: DatabaseMethods().getChats(widget.currentUser['uid']),
       builder: (context, AsyncSnapshot snapshot) {
         return snapshot.hasData
             ? ListView.builder(
@@ -134,13 +134,11 @@ class _ChatListState extends State<ChatList> {
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
                   DocumentSnapshot ds = snapshot.data.docs[index];
-                  String friendEmail =
-                      ds['users'][0] != widget.currentUser['email']
-                          ? ds['users'][0]
-                          : ds['users'][1];
-
+                  dynamic user = ds['users'].keys.toList();
+                  String friendUid =
+                      user != widget.currentUser['uid'] ? user[0] : user[1];
                   return StreamBuilder(
-                    stream: DatabaseMethods().searchByEmail(friendEmail),
+                    stream: DatabaseMethods().getUserSnapshots(friendUid),
                     builder: (context, AsyncSnapshot snap) {
                       Map<String, dynamic> friendUser =
                           snap.hasData ? snap.data.docs[0].data() : {};
@@ -161,12 +159,12 @@ class _ChatListState extends State<ChatList> {
                                     },
                                     title: Text(
                                       friendUser['name'],
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
                                     subtitle: ds['isImage']
                                         ? Row(
-                                            children: [
+                                            children: const [
                                               Icon(Icons.camera_alt_rounded),
                                               Text('Photo')
                                             ],
@@ -217,7 +215,8 @@ class _ChatListState extends State<ChatList> {
     var width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: backgroundColor2,
-      body: isloading ? const Loading() : chatList(height, width),
+      // body: chatList(height, width),
+      body: chatList(height, width),
       floatingActionButton: FloatingActionButton(
         backgroundColor: backgroundColor1,
         elevation: 10,

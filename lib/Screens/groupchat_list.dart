@@ -150,7 +150,7 @@ class _GroupChatListState extends State<GroupChatList> {
                         child: ClipRRect(
                             borderRadius: BorderRadius.circular(100),
                             child: groupInfo['photoURL'] == ''
-                                ? Icon(Icons.group)
+                                ? const Icon(Icons.group)
                                 : Image.network(groupInfo['photoURL'])),
                       ),
                       title: Text(

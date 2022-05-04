@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +14,7 @@ import 'package:neverlost_beta/Firebase/database.dart';
 import 'package:neverlost_beta/Firebase/encryption.dart';
 import 'package:neverlost_beta/Screens/group_location.dart';
 import 'package:neverlost_beta/Screens/group_profile.dart';
+import 'package:neverlost_beta/Screens/group_uploader.dart';
 import 'package:neverlost_beta/Screens/uploader.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -242,14 +244,10 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         ));
 
     setState(() {
-      // Navigator.push(
-      //     context,
-      //     MaterialPageRoute(
-      //         builder: (context) => Uploader(
-      //             chatRoomID: widget.chatRoomID,
-      //             currentUser: widget.currentUser,
-      //             friendUser: widget.friendUser,
-      //             image: croppedFile)));
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>GroupUploader(image: croppedFile, userUID: widget.user['uid'], userName: widget.user['name'], groupInfo: widget.groupInfo)));
     });
   }
   
@@ -260,6 +258,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'lastMessage': Encryption().encrypt(_messageController.text),
       'sender': widget.user['uid'],
       'senderName': widget.user['name'],
+      'isImage':false,
       'timestamp': DateTime.now(),
     };
 
@@ -271,6 +270,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'notSeenBy': widget.groupInfo['users']
           .where((element) => element != widget.user['uid'])
           .toList(),
+      'isImage':false,
       'timestamp': DateTime.now()
     };
     if (_messageController.text != '') {
@@ -286,7 +286,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       builder: (context, AsyncSnapshot snapshot) {
         return snapshot.hasData
             ? ListView.builder(
-                padding: EdgeInsets.only(bottom: 70),
+                padding: const EdgeInsets.only(bottom: 70),
                 itemCount: snapshot.data.docs.length,
                 shrinkWrap: true,
                 reverse: true,
@@ -294,6 +294,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                   Map<String, dynamic> ds = snapshot.data.docs[index].data();
                   ds['id'] = snapshot.data.docs[index].id;
                   bool sendbyMe = ds['sender'] == widget.user['uid'];
+                  bool isUrl = Uri.parse(Encryption().decrypt(ds['message'])).isAbsolute;
                   if (!sendbyMe) {
                     List seenBy = ds['seenBy'];
                     List notSeenBy = ds['notSeenBy'];
@@ -321,7 +322,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                     children: [
                       Container(
                         padding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         margin: EdgeInsets.only(
                             top: 8,
                             bottom: 8,
@@ -346,15 +347,56 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                         ? backgroundColor2.withOpacity(0.7)
                                         : backgroundColor1.withOpacity(0.7)),
                               ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: SelectableText(
-                                Encryption().decrypt(ds['message']),
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    color: sendbyMe
-                                        ? backgroundColor2
-                                        : backgroundColor1),
+                            InkWell(
+                              onLongPress: (){
+                                Clipboard.setData(
+                                ClipboardData(text: Encryption().decrypt(ds['message'])));
+                            Fluttertoast.showToast(msg: 'Copied to Clipboard');
+                              },
+                              onTap: (){
+                                if (ds['isImage'] == true ) {
+                              showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return InteractiveViewer(
+            child: SimpleDialog(
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                children: [
+                  Container(
+                    height: MediaQuery.of(context).size.height,
+                    width: MediaQuery.of(context).size.width,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                            image: NetworkImage(Encryption().decrypt(ds['message'])),
+                            fit: BoxFit.fitWidth)),
+                  ),
+                ]),
+          );
+        });
+                            }
+                            else if (isUrl) {
+                              _launchInBrowser(Encryption().decrypt(ds['message']));
+                            }
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child:  ds['isImage'] == true
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: Image.network(Encryption().decrypt(ds['message'])))
+                                : Text(
+                                    Encryption().decrypt(ds['message']),
+                                    style: TextStyle(
+                                        decoration: isUrl
+                                            ? TextDecoration.underline
+                                            : TextDecoration.none,
+                                        fontSize: 16,
+                                        color: sendbyMe
+                                            ? backgroundColor2
+                                            : backgroundColor1),
+                                  ),
                               ),
                             ),
                           ],
@@ -409,8 +451,8 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                           children: [
                             Expanded(
                               child: Container(
-                                margin: EdgeInsets.all(8),
-                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                margin: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(15),
                                     color: backgroundColor1.withOpacity(0.1)),

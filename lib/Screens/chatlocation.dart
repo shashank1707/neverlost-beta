@@ -37,7 +37,7 @@ class _LocationPageState extends State<LocationPage> {
   }
 
   @override
-  void dispose(){
+  void dispose() {
     timer.cancel();
     super.dispose();
   }
@@ -48,8 +48,8 @@ class _LocationPageState extends State<LocationPage> {
         setState(() {
           lastLocation = event.data()!['lastLocation'];
           locSharePermission = event.data()!['locSharePermission'];
-          print(lastLocation);
           currentStatus = event.data()!['lastLocation'];
+          isLoading = false;
         });
       }
     });
@@ -58,35 +58,90 @@ class _LocationPageState extends State<LocationPage> {
     // });
   }
 
+  String calculateTime(_timestamp) {
+    DateTime currentTime = DateTime.now();
+    var timestamp =
+        DateTime.fromMicrosecondsSinceEpoch(_timestamp.microsecondsSinceEpoch);
+    var yearDiff = currentTime.year - timestamp.year;
+    var monthDiff = currentTime.month - timestamp.month;
+    var dayDiff = currentTime.day - timestamp.day;
+    var hourDiff = currentTime.hour - timestamp.hour;
+    var minDiff = currentTime.minute - timestamp.minute;
+
+    var min = '${timestamp.minute}'.length > 1
+        ? '${timestamp.minute}'
+        : '0${timestamp.minute}';
+
+    var hour = '${timestamp.hour}'.length > 1
+        ? '${timestamp.hour}'
+        : '0${timestamp.hour}';
+
+    var day = '${timestamp.day}'.length > 1
+        ? '${timestamp.day}'
+        : '0${timestamp.day}';
+
+    var month = '${timestamp.month}'.length > 1
+        ? '${timestamp.month}'
+        : '0${timestamp.month}';
+
+    var year = '${timestamp.year}'.substring(2);
+
+    if (yearDiff < 1 &&
+        monthDiff < 1 &&
+        dayDiff < 1 &&
+        hourDiff < 1 &&
+        minDiff < 1) {
+      return 'Just Now';
+    } else if (yearDiff < 1 && monthDiff < 1 && dayDiff < 1) {
+      if (int.parse(hour) == 0) {
+        return '12:$min AM';
+      } else if (int.parse(hour) == 12) {
+        return '12:$min PM';
+      } else if (int.parse(hour) > 12) {
+        return '${int.parse(hour) - 12}:$min PM';
+      } else {
+        return '$hour:$min AM';
+      }
+    } else if ((yearDiff < 1 && monthDiff < 1 && dayDiff < 2) ||
+        (yearDiff < 1 && monthDiff <= 1 && dayDiff < 0) ||
+        (yearDiff == 1 && currentTime.day == 1 && currentTime.month == 1)) {
+      return 'Yesterday';
+    } else {
+      return '$day/$month/$year';
+    }
+  }
+
   getLocation() {
-    timer = Timer.periodic(Duration(seconds: 5), (_) {
-      for (var uid in locSharePermission.keys) {
-        if (locSharePermission[uid] == true) {
-          DatabaseMethods().getUserData(uid).then((value) {
+    if (mounted) {
+      timer = Timer.periodic(const Duration(seconds: 5), (_) {
+        for (var uid in locSharePermission.keys) {
+          if (locSharePermission[uid] == true) {
+            DatabaseMethods().getUserData(uid).then((value) {
+              if (mounted) {
+                setState(() {
+                  currentStatus.update(
+                      uid,
+                      (v) => [
+                            value.data()!['latitude'],
+                            value.data()!['longitude']
+                          ]);
+                });
+              }
+            });
+          } else {
             if (mounted) {
               setState(() {
-                currentStatus.update(
-                    uid,
-                    (v) => [
-                          value.data()!['latitude'],
-                          value.data()!['longitude']
-                        ]);
+                currentStatus.update(uid,
+                    (value) => [lastLocation[uid][0], lastLocation[uid][1]]);
               });
             }
-          });
-        } else {
-          if (mounted) {
-            setState(() {
-              currentStatus.update(
-                  uid, (value) => [lastLocation[uid][0], lastLocation[uid][1]]);
-            });
           }
         }
-      }
-      setState(() {
-        isLoading = false;
+        setState(() {
+          isLoading = false;
+        });
       });
-    });
+    }
   }
   // Future<String> _getAddress(double lat, double long) async {
   //   String address = '';
@@ -122,10 +177,12 @@ class _LocationPageState extends State<LocationPage> {
                 height: 40,
                 width: 40,
                 point: LatLng(currentStatus[widget.currentUID][0].toDouble(),
-                    currentStatus[widget.currentUID][0].toDouble()),
+                    currentStatus[widget.currentUID][1].toDouble()),
                 builder: (ctx) => LocationMarker(
                   user: widget.currentUID,
-                  address: 'adddress',
+                  address: locSharePermission[widget.currentUID]
+                      ? 'Hello'
+                      : calculateTime(lastLocation[widget.currentUID][2]),
                 ),
               ),
             ],
@@ -146,7 +203,10 @@ class _LocationPageState extends State<LocationPage> {
                 point: LatLng(currentStatus[widget.friendUID][0].toDouble(),
                     currentStatus[widget.friendUID][1].toDouble()),
                 builder: (ctx) => LocationMarker(
-                    user: widget.friendUID, address: 'friendAdddress'),
+                    user: widget.friendUID,
+                    address: locSharePermission[widget.friendUID]
+                        ? 'friendAdddress'
+                        : calculateTime(lastLocation[widget.friendUID][2])),
               ),
             ],
           )),

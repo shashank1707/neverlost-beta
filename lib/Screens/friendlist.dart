@@ -94,9 +94,9 @@ class _FriendsListState extends State<FriendsList> {
                     ),
                   ),
                   title: Text(searchList[index]['name'],
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(searchList[index]['status'],
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               );
             })
@@ -127,7 +127,7 @@ class _FriendsListState extends State<FriendsList> {
     var width = MediaQuery.of(context).size.width;
     return Scaffold(
         appBar: AppBar(
-          title: Text('Friends'),
+          title: const Text('Friends'),
           backgroundColor: backgroundColor1,
           elevation: 0,
           shape: const RoundedRectangleBorder(
@@ -137,13 +137,13 @@ class _FriendsListState extends State<FriendsList> {
                 itemBuilder: (context) => <PopupMenuEntry>[
                       PopupMenuItem(
                         onTap: () {},
-                        child: Text('Invite a friend'),
+                        child: const Text('Invite a friend'),
                       ),
                       PopupMenuItem(
                         onTap: () {
                           refresh();
                         },
-                        child: Text('Refresh'),
+                        child: const Text('Refresh'),
                       ),
                     ])
           ],
@@ -186,7 +186,8 @@ class _FriendsListState extends State<FriendsList> {
                               _searchController.clear();
                               setState(() {
                                 searchList = friendsList;
-                                searchList.sort((a, b) => a['name'].compareTo(b['name']));
+                                searchList.sort(
+                                    (a, b) => a['name'].compareTo(b['name']));
                               });
                             },
                           )

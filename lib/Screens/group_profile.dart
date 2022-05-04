@@ -31,7 +31,6 @@ class _GroupProfileState extends State<GroupProfile> {
     super.initState();
   }
 
-
   getGroupInfo() {
     DatabaseMethods().groupDetails(widget.groupUID).listen((event) async {
       if (mounted) {
@@ -68,7 +67,7 @@ class _GroupProfileState extends State<GroupProfile> {
   }
 
   Widget membersList() {
-    var currrentUser = membersInfo
+    var currentUser = membersInfo
         .where((element) => element['uid'] == widget.userUID)
         .toList()[0];
     var admin =
@@ -85,20 +84,22 @@ class _GroupProfileState extends State<GroupProfile> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => Profile(currentUser: currrentUser)));
+                        builder: (context) =>
+                            Profile(currentUser: currentUser)));
               },
               leading: InkWell(
                 child: CircleAvatar(
                   radius: 30,
-                  backgroundImage: NetworkImage(currrentUser['photoURL']),
+                  backgroundImage: NetworkImage(currentUser['photoURL']),
                 ),
               ),
-              title: Text(currrentUser['name'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(currrentUser['status'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              trailing:
-                  adminId == currrentUser['uid'] ? Text('Admin') : Text(''),
+              title: Text(currentUser['name'],
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(currentUser['status'],
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: adminId == currentUser['uid']
+                  ? const Text('Admin')
+                  : const Text(''),
             ),
           ),
         ),
@@ -106,18 +107,20 @@ class _GroupProfileState extends State<GroupProfile> {
           padding: const EdgeInsets.all(4.0),
           child: ListTile(
               onTap: () {
-                if(widget.userUID == adminId){
+                if (widget.userUID == adminId) {
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => Profile(currentUser: currrentUser)));
-                }else{
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              Profile(currentUser: currentUser)));
+                } else {
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => UserProfile(currentUser: currrentUser, friendUserUID: adminId)));
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => UserProfile(
+                              currentUser: currentUser,
+                              friendUserUID: adminId)));
                 }
-                
               },
               leading: InkWell(
                 child: CircleAvatar(
@@ -126,39 +129,90 @@ class _GroupProfileState extends State<GroupProfile> {
                 ),
               ),
               title: Text(admin['name'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(admin['status'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              trailing: Text('Admin')),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: const Text('Admin')),
         ),
-        ...(membersInfo).where((element) => element['uid'] != widget.userUID && element['uid'] != adminId).map((member){
+        ...(membersInfo)
+            .where((element) =>
+                element['uid'] != widget.userUID && element['uid'] != adminId)
+            .map((member) {
           return Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: ListTile(
-                  onTap: () {
-                    Navigator.push(
+            padding: const EdgeInsets.all(4.0),
+            child: ListTile(
+              onTap: () {
+                Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => UserProfile(currentUser: currrentUser, friendUserUID: member['uid'])));
-                  },
-                  leading: InkWell(
-                    child: CircleAvatar(
-                      radius: 30,
-                      backgroundImage: NetworkImage(member['photoURL']),
-                    ),
-                  ),
-                  title: Text(member['name'],
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(member['status'],
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  trailing: adminId == member['uid']
-                      ? Text('admin')
-                      : Text(''),
+                        builder: (context) => UserProfile(
+                            currentUser: currentUser,
+                            friendUserUID: member['uid'])));
+              },
+              leading: InkWell(
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundImage: NetworkImage(member['photoURL']),
                 ),
-              );
+              ),
+              title: Text(member['name'],
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(member['status'],
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: adminId == member['uid']
+                  ? const Text('admin')
+                  : const Text(''),
+            ),
+          );
         })
       ],
     );
+  }
+
+  void changeName() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: backgroundColor2,
+            title:
+                const Text('Name', style: TextStyle(color: backgroundColor1)),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel',
+                      style: TextStyle(color: textColor1))),
+              TextButton(
+                  onPressed: () {
+                    String name = nameController.text;
+                    if (name.length > 5) {
+                      DatabaseMethods().updateGroupName(widget.groupUID, name);
+                      print(membersInfo);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Save',
+                      style: TextStyle(color: backgroundColor1))),
+            ],
+            content: Container(
+              decoration: const BoxDecoration(
+                  border:
+                      Border(bottom: BorderSide(width: 2, color: textColor1))),
+              child: TextField(
+                minLines: 1,
+                maxLines: 5,
+                maxLength: 25,
+                controller: nameController,
+                style: const TextStyle(color: backgroundColor1),
+                decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    helperStyle: TextStyle(color: textColor1)),
+              ),
+            ),
+          );
+        });
   }
 
   @override
@@ -166,7 +220,7 @@ class _GroupProfileState extends State<GroupProfile> {
     var width = MediaQuery.of(context).size.width;
     var height = MediaQuery.of(context).size.height;
     return isloading
-        ? Loading()
+        ? const Loading()
         : Scaffold(
             appBar: AppBar(
               elevation: 0,
@@ -219,7 +273,7 @@ class _GroupProfileState extends State<GroupProfile> {
                                   child: Text(
                                     groupName,
                                     softWrap: true,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                         color: backgroundColor2,
                                         fontSize: 30,
                                         fontWeight: FontWeight.bold,
@@ -238,7 +292,7 @@ class _GroupProfileState extends State<GroupProfile> {
                                       color: backgroundColor2,
                                     ),
                                     onPressed: () {
-                                      //changeName();
+                                      changeName();
                                     },
                                   ),
                                 )
@@ -247,12 +301,12 @@ class _GroupProfileState extends State<GroupProfile> {
                         ),
                         Text(
                           '$membersLength Members',
-                          style: TextStyle(
+                          style: const TextStyle(
                               color: backgroundColor2,
                               fontSize: 15,
                               fontWeight: FontWeight.bold),
                         ),
-                        Text(
+                        const Text(
                           '',
                           style: TextStyle(
                               color: backgroundColor2,

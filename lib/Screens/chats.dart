@@ -6,14 +6,20 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:neverlost_beta/Components/constants.dart';
 import 'package:neverlost_beta/Components/loading.dart';
 import 'package:neverlost_beta/Firebase/database.dart';
+import 'package:neverlost_beta/Firebase/encryption.dart';
 import 'package:neverlost_beta/Screens/uploader.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
+
 class Chats extends StatefulWidget {
-  final currentUser, friendUser,chatRoomID;
-  const Chats({Key? key, required this.currentUser, required this.friendUser,required this.chatRoomID})
+  final currentUser, friendUser, chatRoomID;
+  const Chats(
+      {Key? key,
+      required this.currentUser,
+      required this.friendUser,
+      required this.chatRoomID})
       : super(key: key);
 
   @override
@@ -24,9 +30,15 @@ class _ChatsState extends State<Chats> {
   final _messageController = TextEditingController();
   late Stream messageStream;
   bool isLoading = true;
+  late dynamic isBlock = {
+    widget.currentUser['uid']: false,
+    widget.friendUser['uid']: false
+  };
+  late bool isFriend = true;
   @override
   void initState() {
     super.initState();
+    getUserStream();
   }
 
   Future<void> _launchInBrowser(String url) async {
@@ -59,7 +71,8 @@ class _ChatsState extends State<Chats> {
       'isImage': false,
       'timestamp': DateTime.now(),
     };
-    DatabaseMethods().addMessage(widget.chatRoomID, messageInfo, lastMessageInfo);
+    DatabaseMethods()
+        .addMessage(widget.chatRoomID, messageInfo, lastMessageInfo);
     _messageController.clear();
   }
 
@@ -92,6 +105,17 @@ class _ChatsState extends State<Chats> {
     });
   }
 
+  getUserStream() {
+    DatabaseMethods().chatRoomDetail(widget.chatRoomID).listen((event) async {
+      if (mounted) {
+        setState(() {
+          isBlock = event.data()!['block'];
+          isFriend = event.data()!['isFriend'];
+        });
+      }
+    });
+  }
+
   Widget messageList() {
     return StreamBuilder(
       stream: DatabaseMethods().getMessages(widget.chatRoomID),
@@ -115,8 +139,8 @@ class _ChatsState extends State<Chats> {
                         sendbyMe ? WrapAlignment.end : WrapAlignment.start,
                     children: [
                       Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         margin: EdgeInsets.only(
                             top: 8,
                             bottom: 8,
@@ -134,29 +158,33 @@ class _ChatsState extends State<Chats> {
                             Fluttertoast.showToast(msg: 'Copied to Clipboard');
                           },
                           onTap: () {
-                            if (ds['isImage'] == true ) {
+                            if (ds['isImage'] == true) {
                               showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) {
-          return InteractiveViewer(
-            child: SimpleDialog(
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                children: [
-                  Container(
-                    height: MediaQuery.of(context).size.height,
-                    width: MediaQuery.of(context).size.width,
-                    decoration: BoxDecoration(
-                        image: DecorationImage(
-                            image: NetworkImage(ds['message']),
-                            fit: BoxFit.fitWidth)),
-                  ),
-                ]),
-          );
-        });
-                            }
-                            else if (isUrl) {
+                                  context: context,
+                                  barrierDismissible: true,
+                                  builder: (context) {
+                                    return InteractiveViewer(
+                                      child: SimpleDialog(
+                                          elevation: 0,
+                                          backgroundColor: Colors.transparent,
+                                          children: [
+                                            Container(
+                                              height: MediaQuery.of(context)
+                                                  .size
+                                                  .height,
+                                              width: MediaQuery.of(context)
+                                                  .size
+                                                  .width,
+                                              decoration: BoxDecoration(
+                                                  image: DecorationImage(
+                                                      image: NetworkImage(
+                                                          ds['message']),
+                                                      fit: BoxFit.fitWidth)),
+                                            ),
+                                          ]),
+                                    );
+                                  });
+                            } else if (isUrl) {
                               _launchInBrowser(ds['message']);
                             }
                           },
@@ -212,72 +240,96 @@ class _ChatsState extends State<Chats> {
         body: Stack(
           children: [
             Align(alignment: Alignment.bottomCenter, child: messageList()),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                  color: backgroundColor2,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.all(8),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              color: backgroundColor1.withOpacity(0.1)),
-                          child: TextField(
-                            controller: _messageController,
-                            minLines: 1,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'Enter your Message',
-                                hintStyle: TextStyle(color: textColor1)),
-                          ),
+            (isFriend && !isBlock[widget.currentUser['uid']]! &&
+                    !isBlock[widget.friendUser['uid']]!)
+                ? Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                        color: backgroundColor2,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                margin: const EdgeInsets.all(8),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(15),
+                                    color: backgroundColor1.withOpacity(0.1)),
+                                child: TextField(
+                                  controller: _messageController,
+                                  minLines: 1,
+                                  maxLines: 4,
+                                  decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      hintText: 'Enter your Message',
+                                      hintStyle: TextStyle(color: textColor1)),
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () {
+                                _pickImage(ImageSource.camera);
+                              },
+                              child: const Icon(Icons.camera_alt_outlined),
+                            ),
+                            PopupMenuButton(
+                                icon: const Icon(Icons.filter),
+                                itemBuilder: (context) => <PopupMenuEntry>[
+                                      PopupMenuItem(
+                                        onTap: () {
+                                          _pickImage(ImageSource.gallery);
+                                        },
+                                        child: const Text('Gallery'),
+                                      ),
+                                      PopupMenuItem(
+                                        onTap: () {
+                                          _pickImage(ImageSource.camera);
+                                        },
+                                        child: const Text('Camera'),
+                                      ),
+                                    ]),
+                            Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: backgroundColor1),
+                              child: IconButton(
+                                  onPressed: () {
+                                    if (_messageController.text
+                                        .trim()
+                                        .isNotEmpty) {
+                                      sendMessage();
+                                    } else {
+                                      _messageController.clear();
+                                    }
+                                  },
+                                  icon: const Icon(
+                                    Icons.send_rounded,
+                                    color: backgroundColor2,
+                                  )),
+                            )
+                          ],
+                        )),
+                  )
+                : Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+                      child: Container(
+                        width: MediaQuery.of(context).size.width,
+                        height: 40,
+                        color: backgroundColor1,
+                        child: const Center(
+                          child: Text('You can\'t reply to this conversation',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: backgroundColor2,
+                                decoration: TextDecoration.underline,
+                              )),
                         ),
                       ),
-                      InkWell(
-                        onTap: () {
-                          _pickImage(ImageSource.camera);
-                        },
-                        child: const Icon(Icons.camera_alt_outlined),
-                      ),
-                      PopupMenuButton(
-                          icon: const Icon(Icons.filter),
-                          itemBuilder: (context) => <PopupMenuEntry>[
-                                PopupMenuItem(
-                                  onTap: () {
-                                    _pickImage(ImageSource.gallery);
-                                  },
-                                  child: const Text('Gallery'),
-                                ),
-                                PopupMenuItem(
-                                  onTap: () {
-                                    _pickImage(ImageSource.camera);
-                                  },
-                                  child: const Text('Camera'),
-                                ),
-                              ]),
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                            shape: BoxShape.circle, color: backgroundColor1),
-                        child: IconButton(
-                            onPressed: () {
-                              if (_messageController.text.trim().isNotEmpty) {
-                                sendMessage();
-                              } else {
-                                _messageController.clear();
-                              }
-                            },
-                            icon: const Icon(
-                              Icons.send_rounded,
-                              color: backgroundColor2,
-                            )),
-                      )
-                    ],
-                  )),
-            ),
+                    )),
           ],
         ),
       ),
