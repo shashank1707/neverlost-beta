@@ -133,15 +133,16 @@ class _ChatListState extends State<ChatList> {
                 itemCount: snapshot.data.docs.length,
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
-                  DocumentSnapshot ds = snapshot.data.docs[index];
+                  DocumentSnapshot dsa = snapshot.data.docs[index];
+                  dynamic ds = dsa.data();
                   dynamic user = ds['users'].keys.toList();
                   String friendUid =
-                      user != widget.currentUser['uid'] ? user[0] : user[1];
+                      user[0] != widget.currentUser['uid'] ? user[0] : user[1];
                   return StreamBuilder(
                     stream: DatabaseMethods().getUserSnapshots(friendUid),
                     builder: (context, AsyncSnapshot snap) {
                       Map<String, dynamic> friendUser =
-                          snap.hasData ? snap.data.docs[0].data() : {};
+                          snap.hasData ? snap.data.data() : {};
                       return snap.hasData
                           ? Padding(
                               padding: const EdgeInsets.all(4.0),
@@ -194,7 +195,7 @@ class _ChatListState extends State<ChatList> {
                                       children: [
                                         time(ds['timestamp']),
                                         messageCount(
-                                            ds.id, widget.currentUser['email'])
+                                            dsa.id, widget.currentUser['email'])
                                       ],
                                     )),
                               ),
