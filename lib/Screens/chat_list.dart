@@ -25,11 +25,7 @@ class _ChatListState extends State<ChatList> {
   @override
   void initState() {
     super.initState();
-    getChats().then((v) {
-      setState(() {
-        isloading = false;
-      });
-    });
+    isloading = false;
   }
 
   getChats() async {
@@ -135,7 +131,7 @@ class _ChatListState extends State<ChatList> {
                 itemBuilder: (context, index) {
                   DocumentSnapshot dsa = snapshot.data.docs[index];
                   dynamic ds = dsa.data();
-                  dynamic user = ds['users'].keys.toList();
+                  dynamic user = ds['users'];
                   String friendUid =
                       user[0] != widget.currentUser['uid'] ? user[0] : user[1];
                   return StreamBuilder(

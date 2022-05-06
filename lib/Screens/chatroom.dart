@@ -88,10 +88,7 @@ class _ChatRoomState extends State<ChatRoom>
       'locSharePermission': locSharePermission,
       'seen': false,
       'timestamp': DateTime.now(),
-      'users': {
-        widget.currentUser['uid']: true,
-        widget.friendUser['uid']: true
-      },
+      'users': [widget.currentUser['uid'], widget.friendUser['uid']],
       'isImage': false,
       'isFriend': true,
       'block': {

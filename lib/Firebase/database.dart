@@ -267,7 +267,7 @@ class DatabaseMethods {
   Stream<QuerySnapshot<Map<String, dynamic>>> getChats(uid) {
     return firestore
         .collection('chatRooms')
-        .where('users.$uid', isEqualTo: true)
+        .where('users', arrayContains: uid)
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
